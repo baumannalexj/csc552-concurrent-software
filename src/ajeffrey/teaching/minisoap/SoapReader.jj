@@ -1,0 +1,207 @@
+options { STATIC=false; }
+
+PARSER_BEGIN (SoapReader)
+
+package ajeffrey.teaching.minisoap;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.Array;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
+import java.util.WeakHashMap;
+
+import ajeffrey.teaching.debug.Debug;
+
+class SoapReaderFactoryImpl implements SoapReaderFactory {
+
+    public SoapReader build (final InputStream in) {
+        return new SoapReader (in);
+    }
+
+    public SoapReader build (final Reader in) {
+        return new SoapReader (in);
+    }
+
+}
+
+public class SoapReader {
+
+    public static SoapReaderFactory factory = new SoapReaderFactoryImpl ();
+
+    protected final WeakHashMap cache = new WeakHashMap (); // NEW
+
+    public Object unserialize () throws IOException {
+        Debug.out.println ("SoapReader.unserialize: Starting");
+        try {
+            final Object result = topLevel ();
+             Debug.out.println ("SoapReader.unserialize: Returning");
+            return result;
+        } catch (final ParseException ex) {
+            Debug.out.println ("SoapReader.unserialize: Caught " + ex);
+            throw new SoapException ("Caught " + ex);
+        } catch (final ClassNotFoundException ex) {
+            Debug.out.println ("SoapReader.unserialize: Caught " + ex);
+            throw new SoapException ("Caught " + ex);
+        } catch (final InstantiationException ex) {
+            Debug.out.println ("SoapReader.unserialize: Caught " + ex);
+            throw new SoapException ("Caught " + ex);
+        } catch (final IllegalAccessException ex) {
+            Debug.out.println ("SoapReader.unserialize: Caught " + ex);
+            throw new SoapException ("Caught " + ex);
+        }
+    }
+
+}
+
+PARSER_END (SoapReader)
+
+TOKEN : {
+    <BEGINSTRING: "<String">
+  | <BEGININT: "<int">
+  | <BEGINHANDLE: "<Handle"> // NEW
+  | <BEGINOBJECT: "<Object">
+  | <ENDOBJECT: "</Object>">
+  | <BEGINARRAY: "<Array">
+  | <ENDARRAY: "</Array>">
+  | <NULL: "<Null/>">
+  | <SLASHGT: "/>">
+  | <GT: ">">
+  | <EQUALS: "=">
+  | <CLASS: "class">
+  | <LENGTH: "length">
+  | <VALUE: "value">
+  | <ID: "id"> // NEW
+  | <HREF: "href"> // NEW
+  | <LT: "<">
+  | <SPACE: ([" ","\n","\r","\t"])+>
+  | <STRING_LITERAL: "\"" (
+        ~["\"","\\","\n","\r"] |
+        "\\" ["n","t","b","r","f","\\","\'","\""]
+      )* "\"">
+}
+
+Object topLevel () throws ClassNotFoundException, IllegalAccessException, InstantiationException : {
+   Object result; 
+}{
+    ( <SPACE> )*
+    ( ( result = object () { return result; } ) 
+    | ( result = handle () { return result; } ) // NEW
+    | ( result = string () { return result; } )
+    | ( result = array () { return result; } )
+    | ( <EOF> { return null; } ) )
+}
+
+// NEW
+Object handle () :
+{
+  String id;
+}{
+  <BEGINHANDLE> <SPACE> <HREF> <EQUALS> id=stringLiteral() <SLASHGT>
+  { return cache.get (id); }
+}
+// END NEW
+
+Object object () throws ClassNotFoundException, IllegalAccessException, InstantiationException :
+{
+    String className; String id; Object result;
+}{
+  (
+    <BEGINOBJECT> <SPACE> <CLASS> <EQUALS> className=stringLiteral() 
+    <SPACE> <ID> <EQUALS> id=stringLiteral() <GT> // NEW
+    result=fields (className, id)
+    <ENDOBJECT>
+    { return result; }
+  ) | (
+    <NULL> { return null; }
+  )
+}
+
+// NEW id parameter
+Object fields (final String className, final String id) throws ClassNotFoundException, IllegalAccessException, InstantiationException :
+{
+    final Class objClass = Class.forName (className);
+    final Object result = objClass.newInstance ();
+    cache.put ("#" + id, result); // NEW
+    final Field[] fields = objClass.getFields ();
+    int fieldNum = 0;
+    Object tmpObject; String tmpString; int tmpInt;
+}{
+    ( (
+        ( tmpObject = object () { fields[fieldNum++].set (result, tmpObject); } )
+      | ( tmpObject = handle () { fields[fieldNum++].set (result, tmpObject); } )
+      | ( tmpString = string () { fields[fieldNum++].set (result, tmpString); } )
+      | ( tmpObject = array () { fields[fieldNum++].set (result, tmpObject); } )
+      | ( tmpInt = integer () { fields[fieldNum++].setInt (result, tmpInt); } )
+      | <SPACE>
+    ) {
+      while (fieldNum < fields.length && Modifier.isStatic (fields[fieldNum].getModifiers ())) { fieldNum++ ; }
+    } ) *
+    {
+        if (fieldNum == fields.length) {
+            return result;
+        } else {
+            throw new SoapException ("Not enough fields for " + objClass);
+        }
+    }
+}
+
+String string () : {
+    String result;
+}{
+    <BEGINSTRING> <SPACE> <VALUE> <EQUALS> result=stringLiteral () <SLASHGT>
+    { return result; }
+}
+
+Object array ()  throws ClassNotFoundException, IllegalAccessException, InstantiationException :
+ {
+    String typeName;
+    Class type;
+    String lengthName;
+    int length;
+    String id;
+    Object result;
+    int index=0;
+    Object tmpObject; String tmpString; int tmpInt;
+}{
+    <BEGINARRAY> <SPACE> <CLASS> <EQUALS> typeName = stringLiteral () 
+    <SPACE> <LENGTH> <EQUALS> lengthName=stringLiteral ()
+    <SPACE> <ID> <EQUALS> id=stringLiteral () <GT>  
+    {
+       type = Class.forName (typeName);
+       length = Integer.parseInt (lengthName);
+       result = Array.newInstance (type, length);
+    }
+    (
+        ( tmpObject = object () { Array.set (result, index++, tmpObject); } )
+      | ( tmpObject = handle () { Array.set (result, index++, tmpObject); } )
+      | ( tmpString = string () { Array.set (result, index++, tmpString); } )
+      | ( tmpObject = array () { Array.set (result, index++, tmpObject); } )
+      | ( tmpInt = integer () { Array.setInt (result, index++, tmpInt); } )
+      | <SPACE>
+    )*
+    <ENDARRAY>
+    {
+        if (index == length) {
+            return result;
+        } else {
+            throw new SoapException ("Not enough array elements");
+        }
+    }
+}
+
+int integer () : {
+    String result;
+}{
+    <BEGININT> <SPACE> <VALUE> <EQUALS> result=stringLiteral () <SLASHGT>
+    { return Integer.parseInt (result); }
+}
+
+String stringLiteral () : {
+    Token t;
+}{
+    t=<STRING_LITERAL>
+    { return t.image.substring (1, t.image.length ()-1); }
+}
