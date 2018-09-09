@@ -1,0 +1,160 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en">
+<head>
+<title>Source code</title>
+<link rel="stylesheet" type="text/css" href="../../../../../stylesheet.css" title="Style">
+</head>
+<body>
+<div class="sourceContainer">
+<pre><span class="sourceLineNo">001</span>package ajeffrey.teaching.util.guard;<a name="line.1"></a>
+<span class="sourceLineNo">002</span><a name="line.2"></a>
+<span class="sourceLineNo">003</span>import ajeffrey.teaching.debug.Debug;<a name="line.3"></a>
+<span class="sourceLineNo">004</span><a name="line.4"></a>
+<span class="sourceLineNo">005</span>/**<a name="line.5"></a>
+<span class="sourceLineNo">006</span> * A buggy guard class.<a name="line.6"></a>
+<span class="sourceLineNo">007</span> * &lt;p&gt;This class has a subtle bug with it, due to not performing<a name="line.7"></a>
+<span class="sourceLineNo">008</span> * a double check properly.&lt;/p&gt;<a name="line.8"></a>
+<span class="sourceLineNo">009</span> * @author Alan Jeffrey<a name="line.9"></a>
+<span class="sourceLineNo">010</span> * @version 1.0.0<a name="line.10"></a>
+<span class="sourceLineNo">011</span> */<a name="line.11"></a>
+<span class="sourceLineNo">012</span>public interface BuggyGuard {<a name="line.12"></a>
+<span class="sourceLineNo">013</span><a name="line.13"></a>
+<span class="sourceLineNo">014</span>    /**<a name="line.14"></a>
+<span class="sourceLineNo">015</span>     * A factory for building buggy guards.<a name="line.15"></a>
+<span class="sourceLineNo">016</span>     */<a name="line.16"></a>
+<span class="sourceLineNo">017</span>    public static GuardFactory factory = new BuggyGuardFactoryImpl ();<a name="line.17"></a>
+<span class="sourceLineNo">018</span><a name="line.18"></a>
+<span class="sourceLineNo">019</span>}<a name="line.19"></a>
+<span class="sourceLineNo">020</span><a name="line.20"></a>
+<span class="sourceLineNo">021</span>class BuggyGuardFactoryImpl implements GuardFactory {<a name="line.21"></a>
+<span class="sourceLineNo">022</span>    <a name="line.22"></a>
+<span class="sourceLineNo">023</span>    public Guard build (final boolean init) {<a name="line.23"></a>
+<span class="sourceLineNo">024</span>        return new BuggyGuardImpl (init);<a name="line.24"></a>
+<span class="sourceLineNo">025</span>    }<a name="line.25"></a>
+<span class="sourceLineNo">026</span><a name="line.26"></a>
+<span class="sourceLineNo">027</span>}<a name="line.27"></a>
+<span class="sourceLineNo">028</span><a name="line.28"></a>
+<span class="sourceLineNo">029</span>class BuggyGuardImpl implements Guard {<a name="line.29"></a>
+<span class="sourceLineNo">030</span><a name="line.30"></a>
+<span class="sourceLineNo">031</span>    protected boolean value;<a name="line.31"></a>
+<span class="sourceLineNo">032</span>    protected Object lock = new Object ();<a name="line.32"></a>
+<span class="sourceLineNo">033</span><a name="line.33"></a>
+<span class="sourceLineNo">034</span>    protected BuggyGuardImpl (final boolean init) {<a name="line.34"></a>
+<span class="sourceLineNo">035</span>        this.value = init;<a name="line.35"></a>
+<span class="sourceLineNo">036</span>        Debug.out.println ("BuggyGuardImpl: built");<a name="line.36"></a>
+<span class="sourceLineNo">037</span>    }<a name="line.37"></a>
+<span class="sourceLineNo">038</span><a name="line.38"></a>
+<span class="sourceLineNo">039</span>    public void setValue (final boolean value) {<a name="line.39"></a>
+<span class="sourceLineNo">040</span>        Debug.out.println ("BuggyGuardImpl.setValue: Starting");<a name="line.40"></a>
+<span class="sourceLineNo">041</span>        Debug.out.println ("BuggyGuardImpl.setValue: Current state=" + this);<a name="line.41"></a>
+<span class="sourceLineNo">042</span>        this.value = value;<a name="line.42"></a>
+<span class="sourceLineNo">043</span>        if (value) {<a name="line.43"></a>
+<span class="sourceLineNo">044</span>            Debug.out.println ("BuggyGuardImpl.setValue: Grabbing the lock");<a name="line.44"></a>
+<span class="sourceLineNo">045</span>            synchronized (lock) { <a name="line.45"></a>
+<span class="sourceLineNo">046</span>                Debug.out.println ("BuggyGuardImpl.setValue: Grabbed the lock");<a name="line.46"></a>
+<span class="sourceLineNo">047</span>                Debug.out.println ("BuggyGuardImpl.setValue: Calling notifyAll ()");<a name="line.47"></a>
+<span class="sourceLineNo">048</span>                lock.notifyAll ();<a name="line.48"></a>
+<span class="sourceLineNo">049</span>            }<a name="line.49"></a>
+<span class="sourceLineNo">050</span>            Debug.out.println ("BuggyGuardImpl.setValue: Released the lock");<a name="line.50"></a>
+<span class="sourceLineNo">051</span>        }<a name="line.51"></a>
+<span class="sourceLineNo">052</span>        Debug.out.println ("BuggyGuardImpl.setValue: New state=" + this);<a name="line.52"></a>
+<span class="sourceLineNo">053</span>        Debug.out.println ("BuggyGuardImpl.setValue: Returning");<a name="line.53"></a>
+<span class="sourceLineNo">054</span>    }<a name="line.54"></a>
+<span class="sourceLineNo">055</span><a name="line.55"></a>
+<span class="sourceLineNo">056</span>    public boolean getValue () {<a name="line.56"></a>
+<span class="sourceLineNo">057</span>        Debug.out.println ("BuggyGuardImpl.getValue: Starting");<a name="line.57"></a>
+<span class="sourceLineNo">058</span>        final boolean result = value;<a name="line.58"></a>
+<span class="sourceLineNo">059</span>        Debug.out.println ("BuggyGuardImpl.getValue: Returning " + result);<a name="line.59"></a>
+<span class="sourceLineNo">060</span>        return result;<a name="line.60"></a>
+<span class="sourceLineNo">061</span>    }<a name="line.61"></a>
+<span class="sourceLineNo">062</span><a name="line.62"></a>
+<span class="sourceLineNo">063</span>    public void waitForTrue () throws InterruptedException {<a name="line.63"></a>
+<span class="sourceLineNo">064</span>        Debug.out.println ("BuggyGuardImpl.waitForTrue: Starting");<a name="line.64"></a>
+<span class="sourceLineNo">065</span>        if (!value) {<a name="line.65"></a>
+<span class="sourceLineNo">066</span>            Debug.out.println ("BuggyGuardImpl.waitForTrue: The value was false");<a name="line.66"></a>
+<span class="sourceLineNo">067</span>            Debug.out.println ("BuggyGuardImpl.waitForTrue: Grabbing the lock");<a name="line.67"></a>
+<span class="sourceLineNo">068</span>            synchronized (lock) {<a name="line.68"></a>
+<span class="sourceLineNo">069</span>                Debug.out.println ("BuggyGuardImpl.waitForTrue: Grabbed the lock");<a name="line.69"></a>
+<span class="sourceLineNo">070</span>                // The double-check if statement has been left out here<a name="line.70"></a>
+<span class="sourceLineNo">071</span>                // which causes a bug!<a name="line.71"></a>
+<span class="sourceLineNo">072</span>                Debug.out.println ("BuggyGuardImpl.waitForTrue: Waiting " + this);<a name="line.72"></a>
+<span class="sourceLineNo">073</span>                lock.wait (); <a name="line.73"></a>
+<span class="sourceLineNo">074</span>                Debug.out.println ("BuggyGuardImpl.waitForTrue: Done waiting");<a name="line.74"></a>
+<span class="sourceLineNo">075</span>            }<a name="line.75"></a>
+<span class="sourceLineNo">076</span>            Debug.out.println ("BuggyGuardImpl.waitForTrue: Released the lock");<a name="line.76"></a>
+<span class="sourceLineNo">077</span>        } else {<a name="line.77"></a>
+<span class="sourceLineNo">078</span>            Debug.out.println ("BuggyGuardImpl.waitForTrue: The value was true");<a name="line.78"></a>
+<span class="sourceLineNo">079</span>        }<a name="line.79"></a>
+<span class="sourceLineNo">080</span>        Debug.out.println ("BuggyGuardImpl.getValue: Starting");<a name="line.80"></a>
+<span class="sourceLineNo">081</span>    }<a name="line.81"></a>
+<span class="sourceLineNo">082</span><a name="line.82"></a>
+<span class="sourceLineNo">083</span>    public String toString () {<a name="line.83"></a>
+<span class="sourceLineNo">084</span>        return "Guard { value=" + value + " }";<a name="line.84"></a>
+<span class="sourceLineNo">085</span>    }<a name="line.85"></a>
+<span class="sourceLineNo">086</span><a name="line.86"></a>
+<span class="sourceLineNo">087</span>}<a name="line.87"></a>
+<span class="sourceLineNo">088</span><a name="line.88"></a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre>
+</div>
+</body>
+</html>
