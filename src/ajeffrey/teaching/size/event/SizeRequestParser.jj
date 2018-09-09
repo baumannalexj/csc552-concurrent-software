@@ -1,0 +1,76 @@
+options { STATIC=false; }
+
+PARSER_BEGIN (SizeRequestParser)
+
+package ajeffrey.teaching.size.event;
+
+import java.io.IOException;
+import java.io.InputStream;
+
+/**
+ * A parser for SIZE requests.
+ * @author Alan Jeffrey
+ * @version 1.0.1
+ */
+
+// Note that JavaCC requires the parser to be a public class,
+// so we can't use the "only public interfaces, no public classes"
+// rule here.
+
+public class SizeRequestParser implements SizeRequestMultiplexer {
+
+    /**
+     * A factory for building parsers.
+     */
+    public static final SizeRequestParserFactory factory = new SizeRequestParserFactoryImpl ();
+
+    protected final SizeRequestMultiplexer multiplexer =
+        SizeRequestMultiplexer.factory.build ();
+
+    public void addSizeRequestHandler (final SizeRequestHandler handler) {
+        multiplexer.addSizeRequestHandler (handler);
+    }
+
+    public void removeSizeRequestHandler (final SizeRequestHandler handler) {
+        multiplexer.removeSizeRequestHandler (handler);
+    }
+
+    public void handleSizeRequest (final String fileName) throws IOException {
+        multiplexer.handleSizeRequest (fileName);
+    }
+
+    public void handleQuitRequest () throws IOException {
+        multiplexer.handleQuitRequest ();
+    }
+
+}
+
+class SizeRequestParserFactoryImpl implements SizeRequestParserFactory {
+
+    public SizeRequestParser build (final InputStream in) {
+        return new SizeRequestParser (in);
+    }
+
+}
+
+PARSER_END (SizeRequestParser)
+
+TOKEN : {
+  <QUIT: "QUIT">
+| <CRLF: ("\n" | "\r" | "\r\n")>
+// Your code goes here	
+}
+
+void parseSizeRequest () throws IOException : {
+}{
+  quitRequest ()
+  // Your code goes here
+}
+
+void quitRequest () throws IOException : {
+}{
+  ( <QUIT> <CRLF> | <EOF> )
+  { handleQuitRequest (); }
+}
+
+// Your code goes here

@@ -1,0 +1,49 @@
+options
+{
+  STATIC=false;
+}
+
+PARSER_BEGIN (TestBalancedRecognizer)
+
+package ajeffrey.teaching.test;
+
+public class TestBalancedRecognizer {
+
+    /*
+     * A test
+     */
+    public static void main (String[] args) throws Exception {
+	TestBalancedRecognizer parser = new TestBalancedRecognizer (System.in);
+	parser.parse ();
+    }
+
+}
+
+PARSER_END (TestBalancedRecognizer)
+
+/*
+ * The terminals
+ */
+
+TOKEN : {
+  <OPEN: "(">
+| <CLOSE: ")">
+| <PERIOD: ".">
+}
+
+/*
+ * The nonterminals
+ */
+
+void parse () : {} {
+  balanced () 
+  <PERIOD>
+}
+
+void balanced () : {} {
+  (
+    <OPEN>
+    balanced () 
+    <CLOSE> 
+  )*
+}

@@ -1,0 +1,594 @@
+<?xml version="1.0"?>
+<!-- <!DOCTYPE project PUBLIC "-//ANT//DTD project//EN" "project.dtd"> -->
+
+<project name="Generic Class Buildfile" default="test" basedir=".">
+
+  <!--
+    ========================================================================
+    Defined properties
+    ========================================================================
+  -->
+  <!-- project name -->
+  <property file="build.properties" />
+
+  <!-- resource pattern - relative to source directory -->
+  <property name="resource.pat" value="resources/**/*" />
+
+  <!-- test pattern -->
+  <property name="test.pat" value="**/*TEST*" />
+
+  <!-- external library directory -->
+  <property name="lib.dir"  value="lib" />
+
+  <!-- build directory -->
+  <property name="bld.dir"     value="build" />
+  <property name="bld.app"     value="${bld.dir}/classes" />
+  <property name="bld.test"    value="${bld.dir}/classes" />
+  <property name="bld.dep"     value="${bld.dir}/dependencies" />
+  <property name="bld.doc.pub" value="${bld.dir}/doc-public" />
+  <property name="bld.doc.prv" value="${bld.dir}/doc-private" />
+
+  <!-- distribution directory -->
+  <property name="dst.dir"  value="${bld.dir}" />
+  <property name="app.jar"  value="${dst.dir}/${project.name}.jar" />
+  <property name="src.zip"  value="${dst.dir}/${project.name}-src.zip" />
+  <property name="dst.doc"  value="${dst.dir}/${project.name}-doc.zip" />
+
+  <!-- test result directory -->
+  <property name="report.dir" value="." />
+
+  <!-- include/exclude patterns -->
+  <property name="exclude.pat"
+            value="**/OLD/**,**/*-*/**,**/*~,**/*.bak" />
+  <property name="src.include.pat"
+            value="**/*/**,${src.app}/**/*,${src.test}/**/*,${lib.dir}/**/*" />
+  <property name="src.exclude.pat"
+            value="build/**,${exclude.pat},**/*.class,**/*.zip" />
+
+  <!--
+    ========================================================================
+    Built-in properties
+    The first group is defined by ant
+    The second group is defined by Java's System.getProperties()
+    ========================================================================
+  -->
+  <!-- basedir             The absolute path of the project's basedir -->
+  <!--                     (as set with the basedir attribute of      -->
+  <!--                     <project>).                                -->
+  <!-- ant.file            The absolute path of the buildfile.        -->
+  <!-- ant.version         the version of Ant                         -->
+  <!-- ant.project.name    the name of the project that is currently  -->
+  <!--                     executing; it is set in the name attribute -->
+  <!--                     of <project>.                              -->
+  <!-- ant.java.version    the JVM version Ant detected; for example  -->
+  <!--                     "1.1", "1.2", "1.3" or "1.4".              -->
+
+  <!-- java.version        Java version number                        -->
+  <!-- java.vendor         Java vendor specific string                -->
+  <!-- java.vendor.url     Java vendor URL                            -->
+  <!-- java.home           Java installation directory                -->
+  <!-- java.class.version  Java class version number                  -->
+  <!-- java.class.path     Java classpath                             -->
+  <!-- os.name             Operating System Name                      -->
+  <!-- os.arch             Operating System Architecture              -->
+  <!-- os.version          Operating System Version                   -->
+  <!-- file.separator      File separator ("/" on Unix)               -->
+  <!-- path.separator      Path separator (":" on Unix)               -->
+  <!-- line.separator      Line separator ("\n" on Unix)              -->
+  <!-- user.name           User account name                          -->
+  <!-- user.home           User home directory                        -->
+  <!-- user.dir            User's current working directory           -->
+
+  <!--
+    ========================================================================
+    Initialize directories and paths
+    ========================================================================
+  -->
+  <target name="initbuild">
+    <echo>Type "ant -projecthelp" for help</echo>
+
+    <!-- see if ${src.zip} should be recreated -->
+    <uptodate property="src.uptodate" targetfile="${src.zip}" >
+      <srcfiles dir="."
+                includes="${src.include.pat}"
+                excludes="${src.exclude.pat}"
+      />
+    </uptodate>
+
+    <!-- verify that all mandatory properties have been set -->
+    <condition property="properties.ok">
+      <and>
+        <isset property="project.name"/>
+        <isset property="src.top"/>
+        <isset property="src.app"/>
+        <isset property="src.test"/>
+      </and>
+    </condition>
+    <fail message="Missing property (check build.properties file)"
+          unless="properties.ok"
+    />
+    <!-- create directories -->
+    <mkdir dir="${bld.dir}" />
+    <mkdir dir="${bld.app}" />
+    <mkdir dir="${bld.test}" />
+    <mkdir dir="${bld.doc.pub}" />
+    <mkdir dir="${bld.doc.prv}" />
+    <mkdir dir="${bld.dep}" />
+    <mkdir dir="${dst.dir}" />
+
+    <!-- set paths -->
+    <path id="class.path.base">
+      <fileset dir="."
+        includes="${lib.dir}/**/*.jar"
+      />
+      <pathelement path="${java.class.path}" />
+    </path>
+    <path id="class.path.app">
+      <pathelement location="${app.jar}" />
+      <path refid="class.path.base" />
+    </path>
+    <path id="class.path.test">
+      <pathelement location="${bld.test}" />
+      <path refid="class.path.app" />
+    </path>
+
+    <!-- verify dependencies -->
+    <depend
+       srcdir="${src.app}"
+       destdir="${bld.app}"
+       cache="${bld.dep}"
+       closure="yes"
+    />
+  </target>
+
+
+  <!--
+    ========================================================================
+    Compile application
+    ========================================================================
+  -->
+  <target name="compile" depends="initbuild,source"
+          description="compiles the application class files">
+    <javac
+       srcdir="${src.app}"
+       destdir="${bld.app}"
+       excludes="${exclude.pat},${test.pat}"
+       source="1.4"
+       deprecation="on"
+       debug="on"
+      >
+      <classpath refid="class.path.base" />
+    </javac>
+    <copy todir="${bld.app}" >
+      <fileset dir="${src.app}"
+        includes="${resource.pat}"
+      />
+    </copy>
+ </target>
+
+  <!--
+    ========================================================================
+    Build executable distribution
+    ========================================================================
+  -->
+  <target name="jar" depends="compile"
+          description="builds the distribution executable jar file -- does not include tests">
+    <jar
+       destfile="${app.jar}"
+       basedir="${bld.app}"
+       excludes="${exclude.pat},${test.pat}">
+      <manifest>
+        <attribute name="Built-By" value="${user.name}"/>
+        <!-- <attribute name="Main-Class" value="${main.name}"/> -->
+      </manifest>
+    </jar>
+  </target>
+
+  <!--
+    ========================================================================
+    Compile and run tests
+    ========================================================================
+  -->
+  <target name="test" depends="jar"
+          description="compiles and runs the test class files">
+    <javac
+       srcdir="${src.test}"
+       destdir="${bld.test}"
+       includes="${test.pat}"
+       excludes="${exclude.pat}"
+       source="1.4"
+       deprecation="on"
+       debug="on"
+      >
+      <classpath refid="class.path.app" />
+    </javac>
+    <junit
+       haltonerror="on"
+       haltonfailure="on"
+       fork="on"
+      >
+      <classpath refid="class.path.test" />
+      <formatter type="brief" usefile="no" />
+      <batchtest todir="${report.dir}">
+        <!-- exclude classes nested inside the test classes -->
+        <fileset dir="${bld.test}"
+          includes="${test.pat}" 
+          excludes="${test.pat}$$*" 
+        />
+      </batchtest>
+    </junit>
+  </target>
+
+  <!--
+    ========================================================================
+    Build source distribution
+    ========================================================================
+  -->
+  <target name="source" depends="initbuild"
+          unless="src.uptodate"
+          description="builds the distribution source zip file">
+    <zip destfile="${src.zip}">
+      <fileset dir="."
+        includes="${src.include.pat}"
+        excludes="${src.exclude.pat}"
+      />
+    </zip>
+    <!-- <echo>You may now hand in the file "${src.zip}"</echo> -->
+  </target>
+
+  <!--
+    ========================================================================
+    Build documentation
+    ========================================================================
+  -->
+  <target name="doc" depends="doc-pub,doc-priv"
+          description="builds the distribution documentation"/>
+
+  <target name="doc-pub" depends="initbuild,source"
+          description="builds public documentation">
+    <javadoc
+       destdir="${bld.doc.pub}"
+       linksource="yes"
+       source="1.4"
+       author="true"
+       version="true"
+       use="true"
+      >
+      <classpath refid="class.path.base" />
+      <fileset dir="${src.app}"
+        includes="**/*.java"
+        excludes="${exclude.pat},${test.pat}"
+      />
+      <link
+        offline="true"
+        href="http://java.sun.com/j2se/1.4.2/docs/api/"
+        packagelistLoc="/usr/local/jdk/docs/api"
+      />
+    </javadoc>
+    <zip
+       destfile="${dst.doc}"
+       basedir="${bld.doc.pub}"
+    />
+  </target>
+
+  <target name="doc-priv" depends="initbuild,source"
+          description="builds the package-private documentation">
+    <javadoc
+       destdir="${bld.doc.prv}"
+       linksource="yes"
+       Package="yes"
+       source="1.4"
+       author="true"
+       version="true"
+       use="true"
+      >
+      <classpath refid="class.path.base" />
+      <fileset dir="${src.app}"
+        includes="**/*.java"
+        excludes="${exclude.pat},${test.pat}"
+      />
+      <link
+        offline="true"
+        href="http://java.sun.com/j2se/1.4.2/docs/api/"
+        packagelistLoc="/usr/local/jdk/docs/api"
+      />
+    </javadoc>
+  </target>
+
+  <!--
+    ========================================================================
+    Build distribution
+    ========================================================================
+  -->
+  <target name="dist" depends="jar,source,doc"
+          description="builds all distribution files">
+  </target>
+
+  <!--
+    ========================================================================
+    Remove class and backup files
+    ========================================================================
+  -->
+  <target name="clean"
+          description="removes class files and backup files">
+    <delete>
+      <fileset dir="."
+        includes="**/*.bak,**/*\~,**/*.class"
+      />
+    </delete>
+  </target>
+
+  <!--
+    ========================================================================
+    Remove distribution files and build directory
+    ========================================================================
+  -->
+  <target name="veryclean" depends="clean"
+          description="removes distribution files and build directory">
+    <delete dir="${bld.dir}" />
+    <delete file="${app.jar}" />
+    <delete file="${doc.zip}" />
+    <delete file="${src.zip}" />
+    <delete dir="${pub.source}" />
+    <delete dir="${pub.doc.prv}" />
+    <delete dir="${pub.doc.pub}" />
+    <delete dir="${html.dir}" />
+  </target>
+
+  <!--
+    ========================================================================
+    Public copy
+    ========================================================================
+  -->
+  <target name="pub"     depends="pubcode,pubdoc" />
+  <target name="pubcode" depends="pubjar,pubhtml,pubzip,pubant" />
+  <target name="pubdoc"  depends="pubdoc-priv,pubdoc-pub" />
+
+  <property name="pub.dir"     value="../../publish" />
+  <property name="pub.code"    value="${pub.dir}/code" />
+  <property name="pub.jar"     value="${pub.code}/${project.name}classes.jar" />
+  <property name="pub.zip"     value="${pub.code}/${project.name}source.zip" />
+  <property name="pub.source"  value="${pub.code}/${src.top}" />
+  <property name="pub.app"     value="${pub.code}/${src.app}" />
+  <property name="pub.doc.prv" value="${pub.code}/doc-private" />
+  <property name="pub.doc.pub" value="${pub.code}/doc-public" />
+  <property name="doc.prv"     value="doc-private" />
+  <property name="doc.pub"     value="doc-public" />
+
+  <property name="html.name"   value="html" />
+  <property name="html.dir"    value="${pub.code}/${html.name}" />
+  <property name="html.source" value="${html.dir}" />
+
+  <property name="priv.pat" value="**/private/**,**/private-*/**,**/*-private/**,**/*~,**/*.bak,**/*.o,**/a.out,**/*.cmi,**/*.cmo,**/*.exe" />
+  <property name="hide.exe" value="../util/hidePrivates.pl" />
+
+  <target name="pubcopy">
+    <mkdir dir="${pub.dir}" />
+    <mkdir dir="${pub.code}" />
+    <copy todir="${pub.code}" >
+      <fileset dir="."
+        includes="build.xml,build.properties"
+      />  
+    </copy>
+    <copy todir="${pub.source}" >
+      <fileset dir="${src.top}"
+        excludes="${priv.pat},**/${bld.name}/**,**/*.java"
+      />
+    </copy>
+    <apply executable="${hide.exe}" dest="${pub.source}" >
+      <arg value="-o"/>
+      <targetfile/>
+      <srcfile/>
+      <fileset dir="${src.top}"
+        includes="**/*.java"
+        excludes="${priv.pat}"
+      />
+      <mapper type="glob" from="*.java" to="*.java" />
+    </apply>
+  </target>
+
+  <target name="pubzip" depends="pubcopy">
+    <delete file="${pub.zip}" />
+    <zip destfile="${pub.zip}">
+      <fileset dir="${pub.code}"
+        excludes="**/${bld.name}/**,**/*.zip,**/*.jar,${html.name}/**,${doc.pub}/**,${doc.prv}/**"
+      />
+    </zip>
+  </target>
+  
+  <target name="pubjar" depends="compile,pubcopy">
+    <jar
+       destfile="${pub.jar}"
+       basedir="${bld.app}"
+       excludes="${priv.pat},${test.pat}">
+      <manifest>
+        <attribute name="Built-By" value="${user.name}"/>
+        <!-- <attribute name="Main-Class" value="${main.name}"/> -->
+      </manifest>
+    </jar>
+  </target>
+
+  <target name="pubhtml" depends="pubcopy">
+    <mkdir dir="${html.dir}" />
+    <apply executable="../util/colorize.pl" dest="${html.dir}" >
+      <arg value="-s"/>
+      <arg value="java"/>
+      <arg value="-o"/>
+      <targetfile/>
+      <srcfile/>
+      <fileset dir="${pub.source}"
+        includes="**/*.java"
+        excludes="${priv.pat}"
+      />
+      <mapper type="glob" from="*.java" to="*_java.html" />
+    </apply>
+    <apply executable="../util/colorize.pl" dest="${html.dir}" >
+      <arg value="-s"/>
+      <arg value="perl"/>
+      <arg value="-o"/>
+      <targetfile/>
+      <srcfile/>
+      <fileset dir="${pub.source}"
+        includes="**/*.pl"
+        excludes="${priv.pat}"
+      />
+      <mapper type="glob" from="*.pl" to="*_pl.html" />
+    </apply>
+    <apply executable="../util/colorize.pl" dest="${html.dir}" >
+      <arg value="-s"/>
+      <arg value="prolog"/>
+      <arg value="-o"/>
+      <targetfile/>
+      <srcfile/>
+      <fileset dir="${pub.source}"
+        includes="prolog/**/*.pl"
+        excludes="${priv.pat}"
+      />
+      <mapper type="glob" from="*.pl" to="*_pl.html" />
+    </apply>
+    <apply executable="../util/colorize.pl" dest="${html.dir}" >
+      <arg value="-s"/>
+      <arg value="cpp"/>
+      <arg value="-o"/>
+      <targetfile/>
+      <srcfile/>
+      <fileset dir="${pub.source}"
+        includes="**/*.cpp"
+        excludes="${priv.pat}"
+      />
+      <mapper type="glob" from="*.cpp" to="*_cpp.html" />
+    </apply>
+    <apply executable="../util/colorize.pl" dest="${html.dir}" >
+      <arg value="-s"/>
+      <arg value="caml"/>
+      <arg value="-o"/>
+      <targetfile/>
+      <srcfile/>
+      <fileset dir="${pub.source}"
+        includes="**/*.ml"
+        excludes="${priv.pat}"
+      />
+      <mapper type="glob" from="*.ml" to="*_ml.html" />
+    </apply>
+    <apply executable="../util/colorize.pl" dest="${html.dir}" >
+      <arg value="-s"/>
+      <arg value="caml"/>
+      <arg value="-o"/>
+      <targetfile/>
+      <srcfile/>
+      <fileset dir="${pub.source}"
+        includes="**/*.mli"
+        excludes="${priv.pat}"
+      />
+      <mapper type="glob" from="*.mli" to="*_mli.html" />
+    </apply>
+    <apply executable="../util/colorize.pl" dest="${html.dir}" >
+      <arg value="-s"/>
+      <arg value="sml"/>
+      <arg value="-o"/>
+      <targetfile/>
+      <srcfile/>
+      <fileset dir="${pub.source}"
+        includes="**/*.sml"
+        excludes="${priv.pat}"
+      />
+      <mapper type="glob" from="*.sml" to="*_sml.html" />
+    </apply>
+  </target>
+  
+  <target name="pubant" depends="pubcopy">
+    <apply executable="../util/ant.sh" >
+      <srcfile/>
+      <fileset dir="${pub.code}"
+        includes="**/build.xml"
+        excludes="build.xml"
+      />
+      <arg value="test"/>
+    </apply>
+    <apply executable="../util/ant.sh" >
+      <srcfile/>
+      <fileset dir="${pub.code}"
+        includes="**/build.xml"
+        excludes="build.xml"
+      />
+      <arg value="doc"/>
+    </apply>
+  </target>
+
+  <target name="pubdoc-priv" depends="compile,pubcopy">
+    <javadoc
+      packagenames="*"
+      excludepackagenames="*-*.*"
+      linksource="yes"
+      Package="yes"
+      sourcepath="${pub.app}"
+      destdir="${pub.doc.prv}"
+      author="true"
+      version="true"
+      >
+      <link
+        offline="true"
+        href="http://java.sun.com/j2se/1.4.2/docs/api/"
+        packagelistLoc="/usr/local/jdk/docs/api"
+      />
+    </javadoc>
+  </target>
+
+  <target name="pubdoc-pub" depends="compile,pubcopy">
+    <javadoc
+      packagenames="*"
+      excludepackagenames="*-*.*"
+      linksource="yes"
+      Package="no"
+      sourcepath="${pub.app}"
+      destdir="${pub.doc.pub}"
+      author="true"
+      version="true"
+      >
+      <link
+        offline="true"
+        href="http://java.sun.com/j2se/1.4.2/docs/api/"
+        packagelistLoc="/usr/local/jdk/docs/api"
+      />
+    </javadoc>
+  </target>
+
+
+  <!-- ==================================================================== -->
+  <!-- Defines the project classpath                                        -->
+  <!-- ==================================================================== -->
+<!--   <path id="project.classpath" > -->
+    <!-- our compilation directory -->
+<!--     <pathelement location="${bld.app}" /> -->
+    <!-- needed 3rd party libraries -->
+    <!-- <fileset dir="${dir.lib}"  -->
+    <!--   includes="**/*.jar"  -->
+    <!-- /> -->
+<!--   </path> -->
+  
+  <!-- ==================================================================== -->
+  <!-- Runs Jalopy                                                          -->
+  <!-- ==================================================================== -->
+<!--   <property name="jalopy-broken" value="**/Video.java"/> -->
+<!--   <taskdef name="jalopy" -->
+<!--            classname="de.hunsicker.jalopy.plugin.ant.AntPlugin"> -->
+<!--     <classpath> -->
+<!--       <fileset dir="/usr/local/jalopy-1.0b10/lib" -->
+<!--         includes="*.jar" -->
+<!--       /> -->
+<!--     </classpath> -->
+<!--   </taskdef> -->
+<!--   <target name="format" depends="compile"> -->
+<!--     <jalopy fileformat="unix" -->
+<!--             loglevel="info" -->
+<!--             convention="jalopy.xml" -->
+<!--             threads="2" -->
+<!--             classpathref="project.classpath"> -->
+<!--       <fileset dir="${code.dir}" -->
+<!--         includes="**/*.java" -->
+<!--         excludes="${jalopy-broken},${exclude.pat},${priv.pat},**/aspectj/**,**/aspectj-*/**,**/*-aspectj/**" -->
+<!--       /> -->
+<!--     </jalopy> -->
+<!--   </target> -->
+
+</project>

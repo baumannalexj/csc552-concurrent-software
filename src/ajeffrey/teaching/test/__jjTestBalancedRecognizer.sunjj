@@ -1,0 +1,24 @@
+options {
+  UNICODE_INPUT = true;
+  BUILD_PARSER = false;
+  STATIC = false;
+}
+
+PARSER_BEGIN(__jjTestBalancedRecognizer)
+
+class __jjTestBalancedRecognizer {
+}
+
+PARSER_END(__jjTestBalancedRecognizer)
+
+void __jjdummy() : {} {{}}
+
+TOKEN: {
+<OPEN: "(">
+}
+TOKEN: {
+<CLOSE: ")">
+}
+TOKEN: {
+<PERIOD: ".">
+}

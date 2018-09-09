@@ -1,0 +1,56 @@
+options
+{
+  STATIC=false;
+}
+
+PARSER_BEGIN (TestBalancedParser)
+
+package ajeffrey.teaching.test;
+
+public class TestBalancedParser {
+
+    /*
+     * A test
+     */
+    public static void main (String[] args) throws Exception {
+	TestBalancedParser parser = new TestBalancedParser (System.in);
+	System.out.println (parser.parse ());
+    }
+
+}
+
+PARSER_END (TestBalancedParser)
+
+/*
+ * The terminals
+ */
+
+TOKEN : {
+  <OPEN: "(">
+| <CLOSE: ")">
+| <PERIOD: ".">
+}
+
+/*
+ * The nonterminals
+ */
+
+String parse () : {
+  String result;
+} {
+  result = balanced () 
+  <PERIOD>
+  { return result + ";"; }
+}
+
+String balanced () : {
+  StringBuffer result = new StringBuffer ();
+  String tmp;
+} {
+  (
+    <OPEN>            { result = result.append ("{"); }
+    tmp = balanced () { result = result.append (tmp); }
+    <CLOSE>           { result = result.append ("}"); }
+  )*
+  { return result.toString (); }
+}
