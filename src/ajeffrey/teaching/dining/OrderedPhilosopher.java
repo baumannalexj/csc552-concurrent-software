@@ -42,43 +42,67 @@ class OrderedPhilosopherFactoryImpl implements PhilosopherFactory {
 
 class OrderedPhilosopherImpl implements Runnable, Philosopher {
 
-    final protected Object lhFork;
-    final protected Object rhFork;
+    final protected Comparable lhFork;
+    final protected Comparable rhFork;
     final protected String name;
     final protected Thread thread;
 
-    protected OrderedPhilosopherImpl(final Object lhFork, final Object rhFork, final String name) {
+    protected OrderedPhilosopherImpl(final Comparable lhFork,
+                                     final Comparable rhFork,
+                                     final String name) {
         this.lhFork = lhFork;
         this.rhFork = rhFork;
         this.name = name;
         this.thread = new Thread(this);
     }
 
+    @Override
     public void start() {
         thread.start();
     }
 
+    @Override
     public void run() {
         Debug.out.breakPoint(name + " is starting");
         try {
+            Comparable firstForkToGrab;
+            Comparable secondForkToGrab;
+
             while (true) {
                 Debug.out.println(name + " is thinking");
                 delay();
-                Debug.out.println(name + " tries to pick up " + lhFork);
-                synchronized (lhFork) {
-                    Debug.out.println(name + " picked up " + lhFork);
-                    delay();
-                    Debug.out.println(name + " tries to pick up " + rhFork);
-                    synchronized (rhFork) {
-                        Debug.out.println(name + " picked up " + rhFork);
-                        Debug.out.println(name + " starts eating");
-                        delay();
-                        Debug.out.println(name + " finishes eating");
-                    }
+
+                //going around the table, we can avoid deadlock
+                // if the last philosopher attempts to grab the right fork before their left fork
+
+                if (lhFork.compareTo(rhFork) > 0) { // "Fork 1".compareTo("Fork 4) == 3; (> 0) is the last one
+                    firstForkToGrab = rhFork;
+                    secondForkToGrab = lhFork;
+                } else {
+                    firstForkToGrab = lhFork;
+                    secondForkToGrab = rhFork;
                 }
+
+                attemptForkGrabbing(firstForkToGrab, secondForkToGrab);
             }
         } catch (final InterruptedException ex) {
             Debug.out.println(name + " is interrupted");
+        }
+    }
+
+    private void attemptForkGrabbing(Comparable firstForkToGrab, Comparable secondForkToGrab) throws InterruptedException {
+        Debug.out.println(name + " tries to pick up " + firstForkToGrab);
+
+        synchronized (firstForkToGrab) {
+            Debug.out.println(name + " picked up " + firstForkToGrab);
+            delay();
+            Debug.out.println(name + " tries to pick up " + secondForkToGrab);
+            synchronized (secondForkToGrab) {
+                Debug.out.println(name + " picked up " + secondForkToGrab);
+                Debug.out.println(name + " starts eating");
+                delay();
+                Debug.out.println(name + " finishes eating");
+            }
         }
     }
 
