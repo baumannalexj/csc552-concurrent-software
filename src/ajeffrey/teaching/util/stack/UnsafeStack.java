@@ -8,11 +8,8 @@ public interface UnsafeStack {
     public static final UnsafeStackFactory factory = new UnsafeStackFactoryImpl();
 
     public void push(Object element);
-
     public Object pop();
-
     public int size();
-
     public Iterator iterator();
 
 }

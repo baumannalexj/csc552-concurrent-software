@@ -19,8 +19,6 @@ class SafeStackImpl {
         try {
             stack.push(element);
             version++;
-            System.out.println("v: " + version + ", pushed:" + (Integer) element );
-
         } finally {
             writeLock.unlock();
         }
