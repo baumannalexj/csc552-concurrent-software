@@ -28,61 +28,61 @@ class BuggyGuardFactoryImpl implements GuardFactory {
 
 class BuggyGuardImpl implements Guard {
 
-    protected boolean value;
-    protected Object lock = new Object ();
+	protected boolean value;
+	protected Object lock = new Object();
 
-    protected BuggyGuardImpl (final boolean init) {
-	this.value = init;
-	Debug.out.println ("BuggyGuardImpl: built");
-    }
-
-    public void setValue (final boolean value) {
-	Debug.out.println ("BuggyGuardImpl.setValue: Starting");
-	Debug.out.println ("BuggyGuardImpl.setValue: Current state=" + this);
-	this.value = value;
-	if (value) {
-	    Debug.out.println ("BuggyGuardImpl.setValue: Grabbing the lock");
-	    synchronized (lock) { 
-		Debug.out.println ("BuggyGuardImpl.setValue: Grabbed the lock");
-		Debug.out.println ("BuggyGuardImpl.setValue: Calling notifyAll ()");
-		lock.notifyAll ();
-	    }
-	    Debug.out.println ("BuggyGuardImpl.setValue: Released the lock");
+	protected BuggyGuardImpl(final boolean init) {
+		this.value = init;
+		Debug.out.println("BuggyGuardImpl: built");
 	}
-	Debug.out.println ("BuggyGuardImpl.setValue: New state=" + this);
-	Debug.out.println ("BuggyGuardImpl.setValue: Returning");
-    }
 
-    public boolean getValue () {
-	Debug.out.println ("BuggyGuardImpl.getValue: Starting");
-	final boolean result = value;
-	Debug.out.println ("BuggyGuardImpl.getValue: Returning " + result);
-	return result;
-    }
-
-    public void waitForTrue () throws InterruptedException {
-	Debug.out.println ("BuggyGuardImpl.waitForTrue: Starting");
-	if (!value) {
-	    Debug.out.println ("BuggyGuardImpl.waitForTrue: The value was false");
-	    Debug.out.println ("BuggyGuardImpl.waitForTrue: Grabbing the lock");
-	    synchronized (lock) {
-		Debug.out.println ("BuggyGuardImpl.waitForTrue: Grabbed the lock");
-		// The double-check if statement has been left out here
-		// which causes a bug!
-		Debug.out.println ("BuggyGuardImpl.waitForTrue: Waiting " + this);
-		lock.wait (); 
-		Debug.out.println ("BuggyGuardImpl.waitForTrue: Done waiting");
-	    }
-	    Debug.out.println ("BuggyGuardImpl.waitForTrue: Released the lock");
-	} else {
-	    Debug.out.println ("BuggyGuardImpl.waitForTrue: The value was true");
+	public void setValue(final boolean value) {
+		Debug.out.println("BuggyGuardImpl.setValue: Starting");
+		Debug.out.println("BuggyGuardImpl.setValue: Current state=" + this);
+		this.value = value;
+		if (value) {
+			Debug.out.println("BuggyGuardImpl.setValue: Grabbing the lock");
+			synchronized (lock) {
+				Debug.out.println("BuggyGuardImpl.setValue: Grabbed the lock");
+				Debug.out.println("BuggyGuardImpl.setValue: Calling notifyAll ()");
+				lock.notifyAll();
+			}
+			Debug.out.println("BuggyGuardImpl.setValue: Released the lock");
+		}
+		Debug.out.println("BuggyGuardImpl.setValue: New state=" + this);
+		Debug.out.println("BuggyGuardImpl.setValue: Returning");
 	}
-	Debug.out.println ("BuggyGuardImpl.getValue: Starting");
-    }
 
-    public String toString () {
-	return "Guard { value=" + value + " }";
-    }
+	public boolean getValue() {
+		Debug.out.println("BuggyGuardImpl.getValue: Starting");
+		final boolean result = value;
+		Debug.out.println("BuggyGuardImpl.getValue: Returning " + result);
+		return result;
+	}
+
+	public void waitForTrue() throws InterruptedException {
+		Debug.out.println("BuggyGuardImpl.waitForTrue: Starting");
+		if (!value) {
+			Debug.out.println("BuggyGuardImpl.waitForTrue: The value was false");
+			Debug.out.println("BuggyGuardImpl.waitForTrue: Grabbing the lock");
+			synchronized (lock) {
+				Debug.out.println("BuggyGuardImpl.waitForTrue: Grabbed the lock");
+				// The double-check if statement has been left out here
+				// which causes a bug!
+				Debug.out.println("BuggyGuardImpl.waitForTrue: Waiting " + this);
+				lock.wait();
+				Debug.out.println("BuggyGuardImpl.waitForTrue: Done waiting");
+			}
+			Debug.out.println("BuggyGuardImpl.waitForTrue: Released the lock");
+		} else {
+			Debug.out.println("BuggyGuardImpl.waitForTrue: The value was true");
+		}
+		Debug.out.println("BuggyGuardImpl.getValue: Starting");
+	}
+
+	public String toString() {
+		return "Guard { value=" + value + " }";
+	}
 
 }
 

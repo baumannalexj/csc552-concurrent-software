@@ -16,50 +16,51 @@ import ajeffrey.teaching.util.guard.BuggyGuard;
  * #
  * # Error ID: 4F533F4C494E55580E4350500595
  * #
- * # Problematic Thread: prio=1 tid=0x80ba630 nid=0x5971 runnable 
+ * # Problematic Thread: prio=1 tid=0x80ba630 nid=0x5971 runnable
  * #
  * </pre>
  * Hopefully this doesn't happen too often!
+ *
  * @author Alan Jeffrey
  * @version 1.0.2
  */
 public class TestGuard {
 
-    // Choose whether you want the buggy version or not!
-    // public static final Guard guard = Guard.factory.build (false);
-    public static final Guard guard = BuggyGuard.factory.build (false);
+	// Choose whether you want the buggy version or not!
+     public static final Guard guard = Guard.factory.build (false);
+//	public static final Guard guard = BuggyGuard.factory.build(false);
 
-    public static final Thread threadA = new Thread (new Runnable () {
-	    public void run () {
-		Debug.out.breakPoint ("A starting");
-		guard.setValue (true);
-		Debug.out.println ("A done");
-	    }
-	});
-
-    public static final Thread threadB = new Thread (new Runnable () {
-	    public void run () {
-		Debug.out.breakPoint ("B starting");
-		try {
-		    guard.waitForTrue ();
-		} catch (final InterruptedException ex) {
-		    Debug.out.println ("B interrupted");
+	public static final Thread threadA = new Thread(new Runnable() {
+		public void run() {
+			Debug.out.breakPoint("A starting");
+			guard.setValue(true);
+			Debug.out.println("A done");
 		}
-		Debug.out.println ("B done");
-	    }
 	});
 
-    public static void main (String[] args) throws Exception {
-	// Send debugging output to a file
-	Debug.out.addFile ("TestGuardDebug.txt");
-	// Switch on step debugging
-	Debug.out.addFactory (StepDebugStream.factory);
-	// Start the threads.
-	threadA.start ();
-	threadB.start ();
-	threadA.join ();
-	threadB.join ();
-	System.exit (0);
-    }
+	public static final Thread threadB = new Thread(new Runnable() {
+		public void run() {
+			Debug.out.breakPoint("B starting");
+			try {
+				guard.waitForTrue();
+			} catch (final InterruptedException ex) {
+				Debug.out.println("B interrupted");
+			}
+			Debug.out.println("B done");
+		}
+	});
+
+	public static void main(String[] args) throws Exception {
+		// Send debugging output to a file
+		Debug.out.addFile("TestGuardDebug.txt");
+		// Switch on step debugging
+		Debug.out.addFactory(StepDebugStream.factory);
+		// Start the threads.
+		threadA.start();
+		threadB.start();
+		threadA.join();
+		threadB.join();
+		System.exit(0);
+	}
 
 }
