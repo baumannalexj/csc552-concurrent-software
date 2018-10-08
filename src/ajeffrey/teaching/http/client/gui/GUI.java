@@ -4,14 +4,7 @@ import ajeffrey.teaching.http.client.logic.Logic;
 import ajeffrey.teaching.debug.Debug;
 import ajeffrey.teaching.io.JTextAreaIO;
 
-import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
+import javax.swing.*;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -120,8 +113,11 @@ class GUIImpl implements GUI {
 	textArea.setEditable (false);
 	textPanel.setHorizontalScrollBarPolicy 
 	    (JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
-	textPanel.setVerticalScrollBarPolicy 
-	    (JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+
+	//TODO move this where the text is written to always scroll to bottom
+//	JScrollBar verticalScroll = textPanel.getVerticalScrollBar();
+//	verticalScroll.setValue(verticalScroll.getMaximum());
+
 	urlPanel.setBorder (BorderFactory.createEmptyBorder (5,5,5,5));
 	quitButton.addActionListener (quitActionListener);
 	getButton.addActionListener (getActionListener);

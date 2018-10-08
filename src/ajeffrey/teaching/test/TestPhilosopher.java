@@ -3,12 +3,10 @@ package ajeffrey.teaching.test;
 import ajeffrey.teaching.debug.Debug;
 import ajeffrey.teaching.debug.StepDebugStream;
 
-import ajeffrey.teaching.dining.DinerTokenSemaphore;
-import ajeffrey.teaching.dining.OrderedPhilosopher;
 import ajeffrey.teaching.dining.Philosopher;
-import ajeffrey.teaching.dining.PhilosopherFactory;
-import ajeffrey.teaching.dining.DeadlockingPhilosopher;
 import ajeffrey.teaching.dining.TokenPhilosopher;
+
+import java.util.concurrent.Semaphore;
 
 /**
  * A test of the dining philosophers, with four philosophers.
@@ -46,7 +44,8 @@ public class TestPhilosopher {
 //		final PhilosopherFactory factory = OrderedPhilosopher.factory;
 		final TokenPhilosopher.TokenPhilosopherFactoryImpl factory = (TokenPhilosopher.TokenPhilosopherFactoryImpl) TokenPhilosopher.factory;
 
-		final DinerTokenSemaphore semaphore = new DinerTokenSemaphore(4);
+		int numberOfForks = 4;
+		Semaphore semaphore = new Semaphore(numberOfForks - 1);
 
 		factory.setDinerTokenSemaphore(semaphore);
 

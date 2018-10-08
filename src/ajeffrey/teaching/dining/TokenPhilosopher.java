@@ -2,6 +2,8 @@ package ajeffrey.teaching.dining;
 
 import ajeffrey.teaching.debug.Debug;
 
+import java.util.concurrent.Semaphore;
+
 /**
  * A philosopher from the dining philosophers problem.
  * A philosopher thinks, picks up their left-hand fork,
@@ -16,8 +18,7 @@ public interface TokenPhilosopher {
     public static final PhilosopherFactory factory = new TokenPhilosopherFactoryImpl();
 
     public class TokenPhilosopherFactoryImpl implements PhilosopherFactory {
-
-        private DinerTokenSemaphore semaphore = null;
+        private Semaphore semaphore = null;
 
         public Philosopher build(final Comparable lhFork,
                                  final Comparable rhFork,
@@ -29,14 +30,14 @@ public interface TokenPhilosopher {
         public Philosopher build(final Comparable lhFork,
                                  final Comparable rhFork,
                                  final String name,
-                                 final DinerTokenSemaphore semaphore) {
+                                 final Semaphore semaphore) {
 
 
             TokenPhilosopherImpl tokenPhilosopher = new TokenPhilosopherImpl(lhFork, rhFork, name, semaphore);
             return tokenPhilosopher;
         }
 
-        public void setDinerTokenSemaphore(DinerTokenSemaphore semaphore) {
+        public void setDinerTokenSemaphore(Semaphore semaphore) {
             if (semaphore == null) {
                 this.semaphore = semaphore;
             } else {
@@ -44,9 +45,6 @@ public interface TokenPhilosopher {
             }
         }
 
-        public DinerTokenSemaphore getSemaphore() {
-            return semaphore;
-        }
     }
 
 }
@@ -57,10 +55,10 @@ class TokenPhilosopherImpl implements Runnable, Philosopher {
     final protected Object rhFork;
     final protected String name;
     final protected Thread thread;
-    final DinerTokenSemaphore semaphore;
+    final Semaphore semaphore;
 
     protected TokenPhilosopherImpl
-            (final Object lhFork, final Object rhFork, final String name, DinerTokenSemaphore semaphore) {
+            (final Object lhFork, final Object rhFork, final String name, Semaphore semaphore) {
         this.lhFork = lhFork;
         this.rhFork = rhFork;
         this.name = name;
@@ -84,7 +82,7 @@ class TokenPhilosopherImpl implements Runnable, Philosopher {
                 delay();
                 Debug.out.println(name + " tries to get token");
 
-                if (semaphore.acquire()) {
+                if (semaphore.tryAcquire()) {
                     Debug.out.println(name + " tries to pick up " + lhFork);
                     synchronized (lhFork) {
                         Debug.out.println(name + " picked up " + lhFork);
