@@ -32,7 +32,7 @@ public class SumOfSquares {
             return sum;
         }
 
-
+        @Override
         protected void compute() {
             int l = lo;
             int h = hi;
