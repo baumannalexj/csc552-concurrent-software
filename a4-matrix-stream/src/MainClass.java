@@ -4,10 +4,10 @@ public class MainClass {
 
     public static void main(String[] args) {
         int[][] A, B, C, D, r, s, t;
-        int numRows = 1000;
-        int numCols = 1000;
-//        int numRows = 10;
-//        int numCols = 10;
+//        int numRows = 1000;
+//        int numCols = 1000;
+        int numRows = 10;
+        int numCols = 10;
 
         A = new int[numRows][numCols];
         B = new int[numRows][numCols];
@@ -39,23 +39,37 @@ public class MainClass {
         long start = System.currentTimeMillis();
 
 
-//        matMathImpl.add(A, B, r);
-//        matMathImpl.print(r);
+        matMathImpl.add(A, B, r);
+        matMathImpl.print(r);
         System.out.println("------------");
         matMathImplFork.add(A, B, r);
         matMathImplFork.print(r);
         System.out.println("------------");
 //
+////
+        matMathImpl.multiply(r, C, s); //2x3
+        matMathImpl.print(s);
+        System.out.println("------------");
+
+        s = new int[numRows][numCols];
+
+
+        matMathImplFork.multiply(r, C, s);
+        matMathImplFork.print(s);
+        System.out.println("------------");
+
 //
 //
-//        matMathImpl.multiply(r, C, s); //2x3
-//
-//
-//        System.out.println("------------");
-//
-//        matMathImpl.multiply(s, D, t);
-//
-//        matMathImpl.print(t);
+        matMathImpl.multiply(s, D, t);
+        matMathImpl.print(t);
+
+        System.out.println("------------");
+
+        t = new int[numRows][numCols];
+        matMathImplFork.multiply(s, D, t);
+        matMathImpl.print(t);
+
+
 
 
         System.out.println("Time: " +
