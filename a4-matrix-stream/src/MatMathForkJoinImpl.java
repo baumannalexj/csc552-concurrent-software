@@ -5,8 +5,8 @@ public class MatMathForkJoinImpl implements MatMath {
 
     @Override
     public void print(int[][] A) {
-        for (int i = 0; i < A.length; i++) {
-            System.out.println(Arrays.toString(A[i]));
+        for (int[] aA : A) {
+            System.out.println(Arrays.toString(aA));
         }
     }
 
@@ -24,6 +24,38 @@ public class MatMathForkJoinImpl implements MatMath {
         MatrixAdd matrixAdd = new MatrixAdd(0, A.length - 1, 0, A[0].length - 1, A, B, result);
         matrixAdd.fork();
         matrixAdd.join();
+    }
+
+    class OneDArraySum extends RecursiveTask<Integer> {
+        int low;
+        int high;
+        int[] A;
+        int[][] B;
+        int bJIndex;
+
+
+        public OneDArraySum(int low, int high, int[] a, int[][] b, int bJIndex) {
+            this.low = low;
+            this.high = high;
+            A = a;
+            B = b;
+            this.bJIndex = bJIndex;
+        }
+
+        @Override
+        protected Integer compute() {
+            if (high == low) {
+                return A[low] * B[low][bJIndex];
+            } else {
+                int mid = low + (high - low) / 2;
+                OneDArraySum left = new OneDArraySum(low, mid, A, B, bJIndex);
+                OneDArraySum right = new OneDArraySum(mid, high, A, B, bJIndex);
+                left.fork();
+                int rightAns = right.compute();
+                int leftAns = left.join();
+                return leftAns + rightAns;
+            }
+        }
     }
 
     class MatrixMultiply extends RecursiveTask<Void> {
@@ -52,12 +84,16 @@ public class MatMathForkJoinImpl implements MatMath {
             if (iLow == iHigh
                     && jLow == jHigh) {
 
-//                System.out.printf("i %d j %d", iLow, jLow);
-//                System.out.println();
                 for (int k = 0; k < A[0].length; k++) {
                     result[iLow][jLow] += A[iLow][k] * B[k][jLow];
                 }
 
+                //TODO can't seem to parallelize the k-loop :[
+
+//                int k = A[0].length;
+//                OneDArraySum oneDArraySum = new OneDArraySum(0, k, A[iLow], B, jLow);
+//                oneDArraySum.fork();
+//                result[iLow][jLow] = oneDArraySum.join();
 
             } else {
                 int iMid = iLow;
@@ -66,12 +102,12 @@ public class MatMathForkJoinImpl implements MatMath {
                 boolean leftRightSplit = false;
 
                 if (iLow < iHigh) {
-                    iMid = (iLow + iHigh) / 2;
+                    iMid = iLow + (iHigh - iLow) / 2; // integer overflow protection
                     upperLowerSplit = true;
                 }
 
                 if (jLow < jHigh) {
-                    jMid = (jLow + jHigh) / 2;
+                    jMid = jLow + (jHigh - jLow) / 2;
                     leftRightSplit = true;
                 }
 

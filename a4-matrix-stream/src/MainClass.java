@@ -31,9 +31,10 @@ public class MainClass {
         }
 
 
-        MatMath matMathImpl = new MatMathImpl();
-//        MatMath matMathImpl = new MatMathStreamImpl();
-        MatMath matMathImplFork = new MatMathForkJoinImpl();
+        MatMath matMathImpl;
+//        matMathImpl = new MatMathImpl();
+//        matMathImpl = new MatMathStreamImpl();
+        matMathImpl = new MatMathForkJoinImpl();
 
         System.out.println("Starting now.");
         long start = System.currentTimeMillis();
@@ -42,8 +43,6 @@ public class MainClass {
         matMathImpl.add(A, B, r);
         matMathImpl.print(r);
         System.out.println("------------");
-        matMathImplFork.add(A, B, r);
-        matMathImplFork.print(r);
         System.out.println("------------");
 //
 ////
@@ -51,12 +50,6 @@ public class MainClass {
         matMathImpl.print(s);
         System.out.println("------------");
 
-        s = new int[numRows][numCols];
-
-
-        matMathImplFork.multiply(r, C, s);
-        matMathImplFork.print(s);
-        System.out.println("------------");
 
 //
 //
@@ -64,14 +57,7 @@ public class MainClass {
         matMathImpl.print(t);
 
         System.out.println("------------");
-
-        t = new int[numRows][numCols];
-        matMathImplFork.multiply(s, D, t);
-        matMathImpl.print(t);
-
-
-
-
+        
         System.out.println("Time: " +
                 (System.currentTimeMillis() - start) + " ms");
 
