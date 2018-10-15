@@ -1,3 +1,5 @@
+package alexbaumann.matrixmath;
+
 import java.util.Arrays;
 
 public class MatMathImpl implements MatMath {

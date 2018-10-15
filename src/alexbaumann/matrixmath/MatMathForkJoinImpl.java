@@ -1,3 +1,5 @@
+package alexbaumann.matrixmath;
+
 import java.util.Arrays;
 import java.util.concurrent.RecursiveTask;
 
