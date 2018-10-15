@@ -11,10 +11,20 @@ public class MainClass {
 
     public static void main(String[] args) {
         int[][] A, B, C, D, r, s, t;
-        int numRows = 1000;
-        int numCols = 1000;
-//        int numRows = 10;
-//        int numCols = 10;
+//        int numRows = 1000;
+//        int numCols = 1000;
+        int numRows = 10;
+        int numCols = 10;
+
+        MatMath matMathImpl;
+
+
+        //TODO uncomment the implementations you with to use
+        MatMath matMathSimipleImpl = new MatMathImpl();
+//        matMathImpl = new MatMathStreamImpl();
+//        matMathImpl = new MatMathForkJoinImpl();
+        matMathImpl = new MatMathThreadImpl();
+
 
         for (int loop = 0; loop < 5; loop++) {
 
@@ -41,11 +51,6 @@ public class MainClass {
             }
 
 
-            MatMath matMathImpl;
-//        matMathImpl = new MatMathImpl();
-        matMathImpl = new MatMathStreamImpl();
-//            matMathImpl = new MatMathForkJoinImpl();
-
             System.out.println("Starting now.");
             long start = System.currentTimeMillis();
 
@@ -56,8 +61,13 @@ public class MainClass {
 //            System.out.println("------------");
 //
 ////
+            matMathSimipleImpl.multiply(r, C, s); //2x3
+            matMathImpl.print(s);
+
+
+
             matMathImpl.multiply(r, C, s); //2x3
-//            matMathImpl.print(s);
+            matMathImpl.print(s);
 //            System.out.println("------------");
 
 
