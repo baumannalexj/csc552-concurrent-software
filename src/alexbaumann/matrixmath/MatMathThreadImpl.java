@@ -32,12 +32,18 @@ public class MatMathThreadImpl implements MatMath {
 
     @Override
     public void add(int[][] A, int[][] B, int[][] result) {
-        MatrixAdd matrixAdd = new MatrixAdd(0, A.length - 1, 0, A[0].length - 1, A, B, result);
-        matrixAdd.fork();
-        matrixAdd.join();
+        CountDownLatch latch = new CountDownLatch(1);
+        MatrixAdd matrixAdd = new MatrixAdd(0, A.length - 1, 0, A[0].length - 1, A, B, result, latch);
+        
+        try {
+            matrixAdd.start();
+            latch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
-    class MatrixMultiply extends Thread{
+    class MatrixMultiply extends Thread {
 
         int iLow;
         int iHigh;
@@ -141,7 +147,7 @@ public class MatMathThreadImpl implements MatMath {
         }
     }
 
-    class MatrixAdd extends RecursiveTask<Void> {
+    class MatrixAdd extends Thread {
 
         int iLow;
         int iHigh;
@@ -152,7 +158,9 @@ public class MatMathThreadImpl implements MatMath {
 
         int[][] result;
 
-        public MatrixAdd(int iLow, int iHigh, int jLow, int jHigh, int[][] a, int[][] b, int[][] result) {
+        private CountDownLatch parentLatch;
+
+        public MatrixAdd(int iLow, int iHigh, int jLow, int jHigh, int[][] a, int[][] b, int[][] result, CountDownLatch parentLatch) {
             this.iLow = iLow;
             this.iHigh = iHigh;
             this.jLow = jLow;
@@ -160,66 +168,78 @@ public class MatMathThreadImpl implements MatMath {
             A = a;
             B = b;
             this.result = result;
+            this.parentLatch = parentLatch;
         }
 
 
-        protected Void compute() {
+        @Override
+        public void run() {
             if (iLow == iHigh
                     && jLow == jHigh) {
 
                 result[iLow][jLow] = A[iLow][jLow] + B[iLow][jLow];
 
             } else {
-                int iMid = iLow;
-                int jMid = jLow;
-                boolean upperLowerSplit = false;
-                boolean leftRightSplit = false;
+                try {
+                    int iMid = iLow;
+                    int jMid = jLow;
+                    boolean upperLowerSplit = false;
+                    boolean leftRightSplit = false;
 
-                if (iLow < iHigh) {
-                    iMid = (iLow + iHigh) / 2;
-                    upperLowerSplit = true;
-                }
+                    MatrixAdd upperLeft;
+                    MatrixAdd lowerLeft;
+                    MatrixAdd upperRight;
+                    MatrixAdd lowerRight;
+                    CountDownLatch innerLatch;
 
-                if (jLow < jHigh) {
-                    jMid = (jLow + jHigh) / 2;
-                    leftRightSplit = true;
-                }
+                    if (iLow < iHigh) {
+                        iMid = (iLow + iHigh) / 2;
+                        upperLowerSplit = true;
+                    }
 
-                MatrixAdd upperLeft = new MatrixAdd(iLow, iMid, jLow, jMid, A, B, result);
-                MatrixAdd lowerLeft = new MatrixAdd(iMid + 1, iHigh, jLow, jMid, A, B, result);
-                MatrixAdd upperRight = new MatrixAdd(iLow, iMid, jMid + 1, jHigh, A, B, result);
-                MatrixAdd lowerRight = new MatrixAdd(iMid + 1, iHigh, jMid + 1, jHigh, A, B, result);
+                    if (jLow < jHigh) {
+                        jMid = (jLow + jHigh) / 2;
+                        leftRightSplit = true;
+                    }
 
+                    if (upperLowerSplit && leftRightSplit) {
+                        innerLatch = new CountDownLatch(4);
 
-                if (upperLowerSplit && leftRightSplit) {
-                    upperLeft.fork();
-                    lowerLeft.fork();
-                    upperRight.fork();
-                    lowerRight.fork();
+                        upperLeft = new MatrixAdd(iLow, iMid, jLow, jMid, A, B, result, innerLatch);
+                        lowerLeft = new MatrixAdd(iMid + 1, iHigh, jLow, jMid, A, B, result, innerLatch);
+                        upperRight = new MatrixAdd(iLow, iMid, jMid + 1, jHigh, A, B, result, innerLatch);
+                        lowerRight = new MatrixAdd(iMid + 1, iHigh, jMid + 1, jHigh, A, B, result, innerLatch);
 
-                    upperLeft.join();
-                    lowerLeft.join();
-                    upperRight.join();
-                    lowerRight.join();
+                        upperLeft.run();
+                        lowerLeft.run();
+                        upperRight.run();
+                        lowerRight.run();
+                    } else if (upperLowerSplit && !leftRightSplit) {
+                        innerLatch = new CountDownLatch(2);
 
-                } else if (upperLowerSplit && !leftRightSplit) {
+                        upperLeft = new MatrixAdd(iLow, iMid, jLow, jMid, A, B, result, innerLatch);
+                        lowerLeft = new MatrixAdd(iMid + 1, iHigh, jLow, jMid, A, B, result, innerLatch);
 
-                    upperLeft.fork();
-                    lowerLeft.fork();
+                        upperLeft.run();
+                        lowerLeft.run();
 
-                    upperLeft.join();
-                    lowerLeft.join();
+                    } else { //else if (!upperLowerSplit && leftRightSplit) {
+                        innerLatch = new CountDownLatch(2);
 
-                } else if (!upperLowerSplit && leftRightSplit) {
-                    upperLeft.fork();
-                    upperRight.fork();
+                        upperLeft = new MatrixAdd(iLow, iMid, jLow, jMid, A, B, result, innerLatch);
+                        upperRight = new MatrixAdd(iLow, iMid, jMid + 1, jHigh, A, B, result, innerLatch);
 
-                    upperLeft.join();
-                    upperRight.join();
+                        upperLeft.run();
+                        upperRight.run();
+                    }
+
+                    innerLatch.await();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
 
-            return null;
+            parentLatch.countDown();
         }
     }
 }

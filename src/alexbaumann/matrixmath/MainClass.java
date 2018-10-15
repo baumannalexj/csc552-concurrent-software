@@ -13,14 +13,14 @@ public class MainClass {
         int[][] A, B, C, D, r, s, t;
 //        int numRows = 1000;
 //        int numCols = 1000;
-        int numRows = 10;
-        int numCols = 10;
+        int numRows = 1000;
+        int numCols = 1000;
 
         MatMath matMathImpl;
 
 
-        //TODO uncomment the implementations you with to use
-        MatMath matMathSimipleImpl = new MatMathImpl();
+        //TODO uncomment the implementations you wish to use
+//        MatMath matMathSimipleImpl = new MatMathImpl();
 //        matMathImpl = new MatMathStreamImpl();
 //        matMathImpl = new MatMathForkJoinImpl();
         matMathImpl = new MatMathThreadImpl();
@@ -55,23 +55,29 @@ public class MainClass {
             long start = System.currentTimeMillis();
 
 
+//            matMathSimipleImpl.add(A, B, r);
+//            matMathSimipleImpl.print(r);
+//            System.out.println("------------");
+
+//            r = new int[numRows][numCols];
+
             matMathImpl.add(A, B, r);
 //            matMathImpl.print(r);
 //            System.out.println("------------");
-//            System.out.println("------------");
 //
 ////
-            matMathSimipleImpl.multiply(r, C, s); //2x3
-            matMathImpl.print(s);
+//            matMathSimipleImpl.multiply(r, C, s);
+//            matMathSimipleImpl.print(s);
 
 
+//            System.out.println("------------");
+//            s = new int[numRows][numCols];
 
-            matMathImpl.multiply(r, C, s); //2x3
-            matMathImpl.print(s);
+            matMathImpl.multiply(r, C, s);
+//            matMathImpl.print(s);
 //            System.out.println("------------");
 
 
-//
 //
             matMathImpl.multiply(s, D, t);
 //            matMathImpl.print(t);
@@ -81,6 +87,7 @@ public class MainClass {
             System.out.println("Time: " +
                     (System.currentTimeMillis() - start) + " ms");
 
+            System.out.println("------------");
 
         }
 
