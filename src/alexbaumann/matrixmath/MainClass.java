@@ -20,10 +20,11 @@ public class MainClass {
 
 
         //TODO uncomment the implementations you wish to use
-//        MatMath matMathSimipleImpl = new MatMathImpl();
+//        MatMath matMathSimpleImpl = new MatMathImpl();
+//        matMathImpl = new MatMathImpl();
 //        matMathImpl = new MatMathStreamImpl();
 //        matMathImpl = new MatMathForkJoinImpl();
-        matMathImpl = new MatMathThreadImpl();
+        matMathImpl = new MatMathThreadImpl(numCols);
 
 
         for (int loop = 0; loop < 5; loop++) {
@@ -51,12 +52,12 @@ public class MainClass {
             }
 
 
-            System.out.println("Starting now.");
+            System.out.println("Starting now...");
             long start = System.currentTimeMillis();
 
 
-//            matMathSimipleImpl.add(A, B, r);
-//            matMathSimipleImpl.print(r);
+//            matMathSimpleImpl.add(A, B, r);
+//            matMathSimpleImpl.print(r);
 //            System.out.println("------------");
 
 //            r = new int[numRows][numCols];
@@ -66,8 +67,8 @@ public class MainClass {
 //            System.out.println("------------");
 //
 ////
-//            matMathSimipleImpl.multiply(r, C, s);
-//            matMathSimipleImpl.print(s);
+//            matMathSimpleImpl.multiply(r, C, s);
+//            matMathSimpleImpl.print(s);
 
 
 //            System.out.println("------------");
@@ -82,7 +83,6 @@ public class MainClass {
             matMathImpl.multiply(s, D, t);
 //            matMathImpl.print(t);
 
-            System.out.println("------------");
 
             System.out.println("Time: " +
                     (System.currentTimeMillis() - start) + " ms");

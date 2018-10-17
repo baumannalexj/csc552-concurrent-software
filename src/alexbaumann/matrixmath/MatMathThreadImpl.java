@@ -2,9 +2,19 @@ package alexbaumann.matrixmath;
 
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.RecursiveTask;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 
 public class MatMathThreadImpl implements MatMath {
+
+    public final int CUTOFF_DIMENSION;
+    ExecutorService executor = Executors.newFixedThreadPool(10000);
+
+    public MatMathThreadImpl(int numCols) {
+
+        CUTOFF_DIMENSION = 10; //numCols/2/2/2/2;
+    }
 
     @Override
     public void print(int[][] A) {
@@ -22,21 +32,7 @@ public class MatMathThreadImpl implements MatMath {
         MatrixMultiply matrixMultiply = new MatrixMultiply(0, A.length - 1, 0, B[0].length - 1, A, B, result, latch);
         try {
 
-            //TODO do we want to only start a thread when all are ready?
             matrixMultiply.start();
-            latch.await();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    public void add(int[][] A, int[][] B, int[][] result) {
-        CountDownLatch latch = new CountDownLatch(1);
-        MatrixAdd matrixAdd = new MatrixAdd(0, A.length - 1, 0, A[0].length - 1, A, B, result, latch);
-        
-        try {
-            matrixAdd.start();
             latch.await();
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -46,6 +42,7 @@ public class MatMathThreadImpl implements MatMath {
     class MatrixMultiply extends Thread {
 
         int iLow;
+
         int iHigh;
         int jLow;
         int jHigh;
@@ -70,82 +67,101 @@ public class MatMathThreadImpl implements MatMath {
 
         @Override
         public void run() {
+            if (iHigh - iLow <= CUTOFF_DIMENSION
+                    && jHigh - jLow <= CUTOFF_DIMENSION) { // && or || ?
 
-            if (iLow == iHigh
-                    && jLow == jHigh) {
-
-                for (int k = 0; k < A[0].length; k++) {
-                    result[iLow][jLow] += A[iLow][k] * B[k][jLow];
-                }
+                MatMath matMath = new MatMathImpl();
+                matMath.multiply(A, B, result);
 
             } else {
-                try {
-
-                    int iMid = iLow;
-                    int jMid = jLow;
-                    boolean upperLowerSplit = false;
-                    boolean leftRightSplit = false;
-
-
-                    MatrixMultiply upperLeft;
-                    MatrixMultiply lowerLeft;
-                    MatrixMultiply upperRight;
-                    MatrixMultiply lowerRight;
-                    CountDownLatch innerLatch;
-
-                    if (iLow < iHigh) {
-                        iMid = iLow + (iHigh - iLow) / 2; // integer overflow protection
-                        upperLowerSplit = true;
-                    }
-
-                    if (jLow < jHigh) {
-                        jMid = jLow + (jHigh - jLow) / 2;
-                        leftRightSplit = true;
-                    }
-
-
-                    if (upperLowerSplit && leftRightSplit) {
-                        innerLatch = new CountDownLatch(4);
-
-                        upperLeft = new MatrixMultiply(iLow, iMid, jLow, jMid, A, B, result, innerLatch);
-                        lowerLeft = new MatrixMultiply(iMid + 1, iHigh, jLow, jMid, A, B, result, innerLatch);
-                        upperRight = new MatrixMultiply(iLow, iMid, jMid + 1, jHigh, A, B, result, innerLatch);
-                        lowerRight = new MatrixMultiply(iMid + 1, iHigh, jMid + 1, jHigh, A, B, result, innerLatch);
-
-                        upperLeft.run();
-                        lowerLeft.run();
-                        upperRight.run();
-                        lowerRight.run();
-                    } else if (upperLowerSplit && !leftRightSplit) {
-                        innerLatch = new CountDownLatch(2);
-
-                        upperLeft = new MatrixMultiply(iLow, iMid, jLow, jMid, A, B, result, innerLatch);
-                        lowerLeft = new MatrixMultiply(iMid + 1, iHigh, jLow, jMid, A, B, result, innerLatch);
-
-                        upperLeft.run();
-                        lowerLeft.run();
-
-                    } else { //else if (!upperLowerSplit && leftRightSplit) {
-                        innerLatch = new CountDownLatch(2);
-
-                        upperLeft = new MatrixMultiply(iLow, iMid, jLow, jMid, A, B, result, innerLatch);
-                        upperRight = new MatrixMultiply(iLow, iMid, jMid + 1, jHigh, A, B, result, innerLatch);
-
-                        upperLeft.run();
-                        upperRight.run();
-                    }
-
-                    innerLatch.await();
-
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                doDynamicMatrixMultiplySplit(iLow, jLow, iHigh, jHigh, A, B, result);
             }
-
 
             parentLatch.countDown();
         }
     }
+
+    private void doDynamicMatrixMultiplySplit(int iLow, int jLow, int iHigh, int jHigh, int[][] A, int[][] B, int[][] result) {
+        System.out.println("matrix mult");
+        try {
+            int iMid = iLow;
+            int jMid = jLow;
+            boolean upperLowerSplit = false;
+            boolean leftRightSplit = false;
+
+
+            MatrixMultiply upperLeft;
+            MatrixMultiply lowerLeft;
+            MatrixMultiply upperRight;
+            MatrixMultiply lowerRight;
+
+            CountDownLatch innerLatch;
+
+            if (iHigh - iLow > CUTOFF_DIMENSION) {
+                iMid = iLow + (iHigh - iLow) / 2; // integer overflow protection
+                upperLowerSplit = true;
+            }
+
+            if (jHigh - jLow > CUTOFF_DIMENSION) {
+                jMid = jLow + (jHigh - jLow) / 2;
+                leftRightSplit = true;
+            }
+
+
+            if (upperLowerSplit && leftRightSplit) {
+                innerLatch = new CountDownLatch(4);
+
+                upperLeft = new MatrixMultiply(iLow, iMid, jLow, jMid, A, B, result, innerLatch);
+                lowerLeft = new MatrixMultiply(iMid + 1, iHigh, jLow, jMid, A, B, result, innerLatch);
+
+                upperRight = new MatrixMultiply(iLow, iMid, jMid + 1, jHigh, A, B, result, innerLatch);
+                lowerRight = new MatrixMultiply(iMid + 1, iHigh, jMid + 1, jHigh, A, B, result, innerLatch);
+
+                executor.submit(upperLeft);
+                executor.submit(lowerLeft);
+                executor.submit(upperRight);
+                executor.submit(lowerRight);
+
+            } else if (upperLowerSplit && !leftRightSplit) {
+                innerLatch = new CountDownLatch(2);
+
+                upperLeft = new MatrixMultiply(iLow, iMid, jLow, jMid, A, B, result, innerLatch);
+                lowerLeft = new MatrixMultiply(iMid + 1, iHigh, jLow, jMid, A, B, result, innerLatch);
+
+                executor.submit(upperLeft);
+                executor.submit(lowerLeft);
+
+            } else { //else if (!upperLowerSplit && leftRightSplit) {
+                innerLatch = new CountDownLatch(2);
+
+                upperLeft = new MatrixMultiply(iLow, iMid, jLow, jMid, A, B, result, innerLatch);
+                upperRight = new MatrixMultiply(iLow, iMid, jMid + 1, jHigh, A, B, result, innerLatch);
+
+                executor.submit(upperLeft);
+                executor.submit(upperRight);
+            }
+
+            innerLatch.await();
+
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void add(int[][] A, int[][] B, int[][] result) {
+        CountDownLatch latch = new CountDownLatch(1);
+        MatrixAdd matrixAdd = new MatrixAdd(0, A.length - 1, 0, A[0].length - 1, A, B, result, latch);
+
+        try {
+            matrixAdd.start();
+            latch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("add finished");
+    }
+
 
     class MatrixAdd extends Thread {
 
@@ -174,72 +190,87 @@ public class MatMathThreadImpl implements MatMath {
 
         @Override
         public void run() {
-            if (iLow == iHigh
-                    && jLow == jHigh) {
+            if (iHigh - iLow <= CUTOFF_DIMENSION
+                    && jHigh - jLow <= CUTOFF_DIMENSION) { // && or || ?
 
-                result[iLow][jLow] = A[iLow][jLow] + B[iLow][jLow];
+                MatMath matMath = new MatMathImpl();
+                matMath.add(A, B, result);
+
 
             } else {
-                try {
-                    int iMid = iLow;
-                    int jMid = jLow;
-                    boolean upperLowerSplit = false;
-                    boolean leftRightSplit = false;
-
-                    MatrixAdd upperLeft;
-                    MatrixAdd lowerLeft;
-                    MatrixAdd upperRight;
-                    MatrixAdd lowerRight;
-                    CountDownLatch innerLatch;
-
-                    if (iLow < iHigh) {
-                        iMid = (iLow + iHigh) / 2;
-                        upperLowerSplit = true;
-                    }
-
-                    if (jLow < jHigh) {
-                        jMid = (jLow + jHigh) / 2;
-                        leftRightSplit = true;
-                    }
-
-                    if (upperLowerSplit && leftRightSplit) {
-                        innerLatch = new CountDownLatch(4);
-
-                        upperLeft = new MatrixAdd(iLow, iMid, jLow, jMid, A, B, result, innerLatch);
-                        lowerLeft = new MatrixAdd(iMid + 1, iHigh, jLow, jMid, A, B, result, innerLatch);
-                        upperRight = new MatrixAdd(iLow, iMid, jMid + 1, jHigh, A, B, result, innerLatch);
-                        lowerRight = new MatrixAdd(iMid + 1, iHigh, jMid + 1, jHigh, A, B, result, innerLatch);
-
-                        upperLeft.run();
-                        lowerLeft.run();
-                        upperRight.run();
-                        lowerRight.run();
-                    } else if (upperLowerSplit && !leftRightSplit) {
-                        innerLatch = new CountDownLatch(2);
-
-                        upperLeft = new MatrixAdd(iLow, iMid, jLow, jMid, A, B, result, innerLatch);
-                        lowerLeft = new MatrixAdd(iMid + 1, iHigh, jLow, jMid, A, B, result, innerLatch);
-
-                        upperLeft.run();
-                        lowerLeft.run();
-
-                    } else { //else if (!upperLowerSplit && leftRightSplit) {
-                        innerLatch = new CountDownLatch(2);
-
-                        upperLeft = new MatrixAdd(iLow, iMid, jLow, jMid, A, B, result, innerLatch);
-                        upperRight = new MatrixAdd(iLow, iMid, jMid + 1, jHigh, A, B, result, innerLatch);
-
-                        upperLeft.run();
-                        upperRight.run();
-                    }
-
-                    innerLatch.await();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                doDynamicMatrixAdditionSplit(iLow, jLow, iHigh, jHigh, A, B, result);
             }
 
             parentLatch.countDown();
         }
     }
+
+    private void doDynamicMatrixAdditionSplit(int iLow, int jLow, int iHigh, int jHigh, int[][] A, int[][] B, int[][] result) {
+        System.out.println("matrix add");
+
+        try {
+            int iMid = iLow;
+            int jMid = jLow;
+            boolean upperLowerSplit = false;
+            boolean leftRightSplit = false;
+
+
+            MatrixAdd upperLeft;
+            MatrixAdd lowerLeft;
+            MatrixAdd upperRight;
+            MatrixAdd lowerRight;
+
+            CountDownLatch innerLatch;
+
+            if (iHigh - iLow > CUTOFF_DIMENSION) {
+                iMid = iLow + (iHigh - iLow) / 2; // integer overflow protection
+                upperLowerSplit = true;
+            }
+
+            if (jHigh - jLow > CUTOFF_DIMENSION) {
+                jMid = jLow + (jHigh - jLow) / 2;
+                leftRightSplit = true;
+            }
+
+            if (upperLowerSplit && leftRightSplit) {
+                innerLatch = new CountDownLatch(4);
+
+                upperLeft = new MatrixAdd(iLow, iMid, jLow, jMid, A, B, result, innerLatch);
+                lowerLeft = new MatrixAdd(iMid + 1, iHigh, jLow, jMid, A, B, result, innerLatch);
+                upperRight = new MatrixAdd(iLow, iMid, jMid + 1, jHigh, A, B, result, innerLatch);
+                lowerRight = new MatrixAdd(iMid + 1, iHigh, jMid + 1, jHigh, A, B, result, innerLatch);
+
+
+                executor.submit(upperLeft);
+                executor.submit(lowerLeft);
+                executor.submit(upperRight);
+                executor.submit(lowerRight);
+
+            } else if (upperLowerSplit && !leftRightSplit) {
+                innerLatch = new CountDownLatch(2);
+
+                upperLeft = new MatrixAdd(iLow, iMid, jLow, jMid, A, B, result, innerLatch);
+                lowerLeft = new MatrixAdd(iMid + 1, iHigh, jLow, jMid, A, B, result, innerLatch);
+
+                executor.submit(upperLeft);
+                executor.submit(lowerLeft);
+
+            } else { //else if (!upperLowerSplit && leftRightSplit) {
+                innerLatch = new CountDownLatch(2);
+
+                upperLeft = new MatrixAdd(iLow, iMid, jLow, jMid, A, B, result, innerLatch);
+                upperRight = new MatrixAdd(iLow, iMid, jMid + 1, jHigh, A, B, result, innerLatch);
+
+
+                executor.submit(upperLeft);
+                executor.submit(upperRight);
+            }
+
+            innerLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+
 }
