@@ -12,8 +12,7 @@ public class MatMathThreadImpl implements MatMath {
     ExecutorService executor = Executors.newFixedThreadPool(10000);
 
     public MatMathThreadImpl(int numCols) {
-
-        CUTOFF_DIMENSION = 10; //numCols/2/2/2/2;
+        CUTOFF_DIMENSION = numCols/2;
     }
 
     @Override
@@ -70,8 +69,13 @@ public class MatMathThreadImpl implements MatMath {
             if (iHigh - iLow <= CUTOFF_DIMENSION
                     && jHigh - jLow <= CUTOFF_DIMENSION) { // && or || ?
 
-                MatMath matMath = new MatMathImpl();
-                matMath.multiply(A, B, result);
+                for (int i = 0; i < A.length; i++) {
+                    for (int j = 0; j < B[0].length; j++) {
+                        for (int k = 0; k < B.length; k++) {
+                            result[i][j] += A[i][k] * B[k][j];
+                        }
+                    }
+                }
 
             } else {
                 doDynamicMatrixMultiplySplit(iLow, jLow, iHigh, jHigh, A, B, result);
@@ -117,10 +121,15 @@ public class MatMathThreadImpl implements MatMath {
                 upperRight = new MatrixMultiply(iLow, iMid, jMid + 1, jHigh, A, B, result, innerLatch);
                 lowerRight = new MatrixMultiply(iMid + 1, iHigh, jMid + 1, jHigh, A, B, result, innerLatch);
 
+
+
                 executor.submit(upperLeft);
-                executor.submit(lowerLeft);
+                lowerLeft.run();
+//                executor.submit(lowerLeft);
+//                upperRight.run();
                 executor.submit(upperRight);
                 executor.submit(lowerRight);
+//                lowerRight.run();
 
             } else if (upperLowerSplit && !leftRightSplit) {
                 innerLatch = new CountDownLatch(2);
@@ -129,7 +138,8 @@ public class MatMathThreadImpl implements MatMath {
                 lowerLeft = new MatrixMultiply(iMid + 1, iHigh, jLow, jMid, A, B, result, innerLatch);
 
                 executor.submit(upperLeft);
-                executor.submit(lowerLeft);
+//                executor.submit(lowerLeft);
+                lowerLeft.run();
 
             } else { //else if (!upperLowerSplit && leftRightSplit) {
                 innerLatch = new CountDownLatch(2);
@@ -138,7 +148,8 @@ public class MatMathThreadImpl implements MatMath {
                 upperRight = new MatrixMultiply(iLow, iMid, jMid + 1, jHigh, A, B, result, innerLatch);
 
                 executor.submit(upperLeft);
-                executor.submit(upperRight);
+//                executor.submit(upperRight);
+                upperRight.run();
             }
 
             innerLatch.await();
@@ -242,9 +253,12 @@ public class MatMathThreadImpl implements MatMath {
 
 
                 executor.submit(upperLeft);
-                executor.submit(lowerLeft);
+                lowerLeft.run();
+//                executor.submit(lowerLeft);
+//                upperRight.run();
                 executor.submit(upperRight);
                 executor.submit(lowerRight);
+//                lowerRight.run();
 
             } else if (upperLowerSplit && !leftRightSplit) {
                 innerLatch = new CountDownLatch(2);
@@ -253,7 +267,8 @@ public class MatMathThreadImpl implements MatMath {
                 lowerLeft = new MatrixAdd(iMid + 1, iHigh, jLow, jMid, A, B, result, innerLatch);
 
                 executor.submit(upperLeft);
-                executor.submit(lowerLeft);
+//                executor.submit(lowerLeft);
+                lowerLeft.run();
 
             } else { //else if (!upperLowerSplit && leftRightSplit) {
                 innerLatch = new CountDownLatch(2);
@@ -263,7 +278,8 @@ public class MatMathThreadImpl implements MatMath {
 
 
                 executor.submit(upperLeft);
-                executor.submit(upperRight);
+//                executor.submit(upperRight);
+                upperRight.run();
             }
 
             innerLatch.await();
