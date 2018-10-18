@@ -90,13 +90,6 @@ public class MatMathForkJoinImpl implements MatMath {
                     result[iLow][jLow] += A[iLow][k] * B[k][jLow];
                 }
 
-                //TODO can't seem to parallelize the k-loop :[
-
-//                int k = A[0].length;
-//                OneDArraySum oneDArraySum = new OneDArraySum(0, k, A[iLow], B, jLow);
-//                oneDArraySum.fork();
-//                result[iLow][jLow] = oneDArraySum.join();
-
             } else {
                 int iMid = iLow;
                 int jMid = jLow;
