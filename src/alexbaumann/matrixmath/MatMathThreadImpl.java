@@ -6,7 +6,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.RecursiveTask;
 
 public class MatMathThreadImpl implements MatMath {
-    private static final int CUTOFF = 10;
+    private static final int CUTOFF = 2;
     ExecutorService executor = Executors.newWorkStealingPool(100);
 
     @Override
@@ -35,8 +35,12 @@ public class MatMathThreadImpl implements MatMath {
     @Override
     public void add(int[][] A, int[][] B, int[][] result) {
         MatrixAdd matrixAdd = new MatrixAdd(0, A.length - 1, 0, A[0].length - 1, A, B, result);
-        matrixAdd.fork();
-        matrixAdd.join();
+        matrixAdd.start();
+        try {
+            matrixAdd.join();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     class MatrixMultiply extends Thread {
@@ -111,12 +115,7 @@ public class MatMathThreadImpl implements MatMath {
                         upperRight.join();
                         lowerRight.join();
 
-
-
                     } else if (upperLowerSplit && !leftRightSplit) {
-
-//                        System.out.println("a");
-
                         executor.submit(upperLeft);
                         executor.submit(lowerLeft);
 
@@ -124,8 +123,6 @@ public class MatMathThreadImpl implements MatMath {
                         lowerLeft.join();
 
                     } else { //(!upperLowerSplit && leftRightSplit) {
-//                        System.out.println("b");
-
                         executor.submit(upperLeft);
                         executor.submit(upperRight);
 
@@ -144,7 +141,7 @@ public class MatMathThreadImpl implements MatMath {
         }
     }
 
-    class MatrixAdd extends RecursiveTask<Void> {
+    class MatrixAdd extends Thread {
 
         int iLow;
         int iHigh;
@@ -165,64 +162,77 @@ public class MatMathThreadImpl implements MatMath {
             this.result = result;
         }
 
-
-        protected Void compute() {
+        @Override
+        public void run() {
             if (iLow == iHigh
                     && jLow == jHigh) {
 
                 result[iLow][jLow] = A[iLow][jLow] + B[iLow][jLow];
 
             } else {
-                int iMid = iLow;
-                int jMid = jLow;
-                boolean upperLowerSplit = false;
-                boolean leftRightSplit = false;
 
-                if (iLow < iHigh) {
-                    iMid = (iLow + iHigh) / 2;
-                    upperLowerSplit = true;
+                try {
+                    int iMid = iLow;
+                    int jMid = jLow;
+                    boolean upperLowerSplit = false;
+                    boolean leftRightSplit = false;
+                    MatrixAdd upperLeft;
+                    MatrixAdd lowerLeft;
+                    MatrixAdd upperRight;
+                    MatrixAdd lowerRight;
+
+                    if (iLow < iHigh) {
+                        iMid = iLow + (iHigh - iLow) / 2; // integer overflow protection
+                        upperLowerSplit = true;
+                    }
+
+                    if (jLow < jHigh) {
+                        jMid = jLow + (jHigh - jLow) / 2;
+                        leftRightSplit = true;
+                    }
+
+
+                    upperLeft = new MatrixAdd(iLow, iMid, jLow, jMid, A, B, result);
+                    lowerLeft = new MatrixAdd(iMid + 1, iHigh, jLow, jMid, A, B, result);
+                    upperRight = new MatrixAdd(iLow, iMid, jMid + 1, jHigh, A, B, result);
+                    lowerRight = new MatrixAdd(iMid + 1, iHigh, jMid + 1, jHigh, A, B, result);
+
+                    if (upperLowerSplit && leftRightSplit) {
+
+                        executor.submit(upperLeft);
+                        executor.submit(lowerLeft);
+                        executor.submit(upperRight);
+                        executor.submit(lowerRight);
+
+                        upperLeft.join();
+                        lowerLeft.join();
+                        upperRight.join();
+                        lowerRight.join();
+
+                    } else if (upperLowerSplit && !leftRightSplit) {
+                        executor.submit(upperLeft);
+                        executor.submit(lowerLeft);
+
+                        upperLeft.join();
+                        lowerLeft.join();
+
+                    } else { //(!upperLowerSplit && leftRightSplit) {
+                        executor.submit(upperLeft);
+                        executor.submit(upperRight);
+
+                        upperLeft.join();
+                        upperRight.join();
+                    }
+
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
 
-                if (jLow < jHigh) {
-                    jMid = (jLow + jHigh) / 2;
-                    leftRightSplit = true;
-                }
 
-                MatrixAdd upperLeft = new MatrixAdd(iLow, iMid, jLow, jMid, A, B, result);
-                MatrixAdd lowerLeft = new MatrixAdd(iMid + 1, iHigh, jLow, jMid, A, B, result);
-                MatrixAdd upperRight = new MatrixAdd(iLow, iMid, jMid + 1, jHigh, A, B, result);
-                MatrixAdd lowerRight = new MatrixAdd(iMid + 1, iHigh, jMid + 1, jHigh, A, B, result);
-
-
-                if (upperLowerSplit && leftRightSplit) {
-                    upperLeft.fork();
-                    lowerLeft.fork();
-                    upperRight.fork();
-                    lowerRight.fork();
-
-                    upperLeft.join();
-                    lowerLeft.join();
-                    upperRight.join();
-                    lowerRight.join();
-
-                } else if (upperLowerSplit && !leftRightSplit) {
-
-                    upperLeft.fork();
-                    lowerLeft.fork();
-
-                    upperLeft.join();
-                    lowerLeft.join();
-
-                } else if (!upperLowerSplit && leftRightSplit) {
-                    upperLeft.fork();
-                    upperRight.fork();
-
-                    upperLeft.join();
-                    upperRight.join();
-                }
             }
 
-            return null;
+            return;
         }
     }
+
 }
