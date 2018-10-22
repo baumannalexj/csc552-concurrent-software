@@ -1,0 +1,79 @@
+options { STATIC=false; }
+
+PARSER_BEGIN (SizeResponseParser)
+
+package ajeffrey.teaching.size.event;
+
+import java.io.InputStream;
+import java.io.IOException;
+
+/**
+ * A parser for SIZE responses.
+ * @author Alan Jeffrey
+ * @version 1.0.1
+ */
+
+public class SizeResponseParser implements SizeResponseMultiplexer {
+
+    /**
+     * A factory for building parsers.
+     */
+    public static final SizeResponseParserFactory factory = new SizeResponseParserFactoryImpl ();
+
+    protected final SizeResponseMultiplexer multiplexer =
+        SizeResponseMultiplexer.factory.build ();
+
+    public void addSizeResponseHandler (final SizeResponseHandler handler) {
+        multiplexer.addSizeResponseHandler (handler);
+    }
+
+    public void removeSizeResponseHandler (final SizeResponseHandler handler) {
+        multiplexer.removeSizeResponseHandler (handler);
+    }
+
+    public void handleFoundResponse (final String fileName, final long size) throws IOException {
+        multiplexer.handleFoundResponse (fileName, size);
+    }
+
+    public void handleNotFoundResponse () throws IOException {
+        multiplexer.handleNotFoundResponse ();
+    }
+
+    public void handleOKResponse () throws IOException {
+        multiplexer.handleOKResponse ();
+    }
+
+    public void handleEndOfStream () throws IOException {
+        multiplexer.handleEndOfStream ();
+    }
+
+}
+
+class SizeResponseParserFactoryImpl implements SizeResponseParserFactory {
+
+    public SizeResponseParser build (final InputStream in) {
+        return new SizeResponseParser (in);
+    }
+
+}
+
+PARSER_END (SizeResponseParser)
+
+TOKEN : {
+  <OK: "OK">
+  // Your code goes here	
+}
+
+void parseSizeResponse () throws IOException : {
+}{
+  okResponse ()
+  // Your code goes here
+}
+
+void okResponse () throws IOException : {
+}{
+  <OK>
+  { handleOKResponse (); }
+}
+
+// Your code goes here

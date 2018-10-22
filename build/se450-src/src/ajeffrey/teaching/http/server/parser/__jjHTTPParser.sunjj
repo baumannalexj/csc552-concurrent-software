@@ -1,0 +1,57 @@
+options {
+  UNICODE_INPUT = true;
+  BUILD_PARSER = false;
+  STATIC = false;
+}
+
+PARSER_BEGIN(__jjHTTPParser)
+
+class __jjHTTPParser {
+}
+
+PARSER_END(__jjHTTPParser)
+
+void __jjdummy() : {} {{}}
+
+TOKEN: {
+<GET: "GET" | "get">
+}
+TOKEN: {
+<HTTP: "HTTP" | "http">
+}
+TOKEN: {
+<SPACE: " ">
+}
+TOKEN: {
+<COLON: ":">
+}
+TOKEN: {
+<DOT: ".">
+}
+TOKEN: {
+<SLASH: "/">
+}
+TOKEN: {
+<UNDERSCORE: "_">
+}
+TOKEN: {
+<MINUS: "-">
+}
+TOKEN: {
+<CRLF: "\n" | "\r" | "\r\n">
+}
+TOKEN: {
+<DIGIT: ["0"-"9"]>
+}
+TOKEN: {
+<ALPHABETIC: ["a"-"z","A"-"Z"]>
+}
+TOKEN: {
+<CHAR: (<ALPHABETIC> | <DIGIT> | <DOT> | <MINUS> | <UNDERSCORE>)>
+}
+TOKEN: {
+<NUMBER: (<DIGIT>)+>
+}
+TOKEN: {
+<STRING: (<CHAR>)+>
+}

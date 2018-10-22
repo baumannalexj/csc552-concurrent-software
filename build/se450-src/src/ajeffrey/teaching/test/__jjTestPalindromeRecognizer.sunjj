@@ -1,0 +1,20 @@
+options {
+  BUILD_PARSER = false;
+  STATIC = false;
+}
+
+PARSER_BEGIN(__jjTestPalindromeRecognizer)
+
+class __jjTestPalindromeRecognizer {
+}
+
+PARSER_END(__jjTestPalindromeRecognizer)
+
+void __jjdummy() : {} {{}}
+
+TOKEN: {
+<OPEN: "(">
+}
+TOKEN: {
+<CLOSE: ")">
+}
