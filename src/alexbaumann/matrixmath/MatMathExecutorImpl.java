@@ -1,6 +1,7 @@
 package alexbaumann.matrixmath;
 
 import java.util.Arrays;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -35,18 +36,22 @@ public class MatMathExecutorImpl implements MatMath {
 
     @Override
     public void add(int[][] A, int[][] B, int[][] result) {
-        MatrixAdd matrixAdd = new MatrixAdd(0, A.length, 0, A[0].length, A, B, result);
-        matrixAdd.start();
+
+        CountDownLatch startLatch = new CountDownLatch(1);
+        MatrixAdd add = new MatrixAdd(0, A.length, 0, B[0].length, A, B, result, startLatch);
+
+        executor.submit(add);
+
         try {
-            matrixAdd.join();
-        } catch (Exception e) {
+            startLatch.await();
+        } catch (InterruptedException e) {
             e.printStackTrace();
         }
 
         System.out.println("finished addition");
     }
 
-    class MatrixMultiply extends Thread {
+    class MatrixMultiply implements Callable {
 
         int iLow;
         int iHigh;
@@ -71,7 +76,7 @@ public class MatMathExecutorImpl implements MatMath {
 
 
         @Override
-        public void run() {
+        public Void call() {
             if (iHigh - iLow <= CUTOFF
                     && jHigh - jLow <= CUTOFF) {
 
@@ -157,11 +162,11 @@ public class MatMathExecutorImpl implements MatMath {
 
             }
             parentLatch.countDown();
-            return;
+            return null;
         }
     }
 
-    class MatrixAdd extends Thread {
+    class MatrixAdd implements Callable {
 
         int iLow;
         int iHigh;
@@ -171,8 +176,9 @@ public class MatMathExecutorImpl implements MatMath {
         int[][] B;
 
         int[][] result;
+        private CountDownLatch parentLatch;
 
-        public MatrixAdd(int iLow, int iHigh, int jLow, int jHigh, int[][] a, int[][] b, int[][] result) {
+        public MatrixAdd(int iLow, int iHigh, int jLow, int jHigh, int[][] a, int[][] b, int[][] result, CountDownLatch parentLatch) {
             this.iLow = iLow;
             this.iHigh = iHigh;
             this.jLow = jLow;
@@ -180,14 +186,19 @@ public class MatMathExecutorImpl implements MatMath {
             A = a;
             B = b;
             this.result = result;
+            this.parentLatch = parentLatch;
         }
 
         @Override
-        public void run() {
-            if (iLow == iHigh
-                    && jLow == jHigh) {
+        public Void call() {
+            if (iHigh - iLow <= CUTOFF
+                    && jHigh - jLow <= CUTOFF) {
 
-                result[iLow][jLow] = A[iLow][jLow] + B[iLow][jLow];
+                for (int i = iLow; i < iHigh; i++) {
+                    for (int j = jLow; j < jHigh; j++) {
+                        result[i][j] = A[i][j] + B[i][j];
+                    }
+                }
 
             } else {
 
@@ -196,10 +207,8 @@ public class MatMathExecutorImpl implements MatMath {
                     int jMid = jLow;
                     boolean upperLowerSplit = false;
                     boolean leftRightSplit = false;
-                    MatrixAdd upperLeft;
-                    MatrixAdd lowerLeft;
-                    MatrixAdd upperRight;
-                    MatrixAdd lowerRight;
+
+                    CountDownLatch innerLatch;
 
                     if (iLow < iHigh) {
                         iMid = iLow + (iHigh - iLow) / 2; // integer overflow protection
@@ -212,46 +221,61 @@ public class MatMathExecutorImpl implements MatMath {
                     }
 
 
-                    upperLeft = new MatrixAdd(iLow, iMid, jLow, jMid, A, B, result);
-                    lowerLeft = new MatrixAdd(iMid + 1, iHigh, jLow, jMid, A, B, result);
-                    upperRight = new MatrixAdd(iLow, iMid, jMid + 1, jHigh, A, B, result);
-                    lowerRight = new MatrixAdd(iMid + 1, iHigh, jMid + 1, jHigh, A, B, result);
-
                     if (upperLowerSplit && leftRightSplit) {
-
+                        innerLatch = new CountDownLatch(1);
+                        MatrixAdd upperLeft = new MatrixAdd(iLow, iMid, jLow, jMid, A, B, result, innerLatch);
                         executor.submit(upperLeft);
+
+
+                        innerLatch.await();
+                        innerLatch = new CountDownLatch(1);
+                        MatrixAdd lowerLeft = new MatrixAdd(iMid + 1, iHigh, jLow, jMid, A, B, result, innerLatch);
                         executor.submit(lowerLeft);
+                        innerLatch.await();
+
+                        innerLatch = new CountDownLatch(1);
+                        MatrixAdd upperRight = new MatrixAdd(iLow, iMid, jMid + 1, jHigh, A, B, result, innerLatch);
                         executor.submit(upperRight);
+
+                        innerLatch.await();
+                        innerLatch = new CountDownLatch(1);
+
+                        MatrixAdd lowerRight = new MatrixAdd(iMid + 1, iHigh, jMid + 1, jHigh, A, B, result, innerLatch);
                         executor.submit(lowerRight);
 
-                        upperLeft.join();
-                        lowerLeft.join();
-                        upperRight.join();
-                        lowerRight.join();
 
                     } else if (upperLowerSplit && !leftRightSplit) {
+                        innerLatch = new CountDownLatch(1);
+                        MatrixAdd upperLeft = new MatrixAdd(iLow, iMid, jLow, jMid, A, B, result, innerLatch);
                         executor.submit(upperLeft);
+
+                        innerLatch.await();
+                        innerLatch = new CountDownLatch(1);
+
+                        MatrixAdd lowerLeft = new MatrixAdd(iMid + 1, iHigh, jLow, jMid, A, B, result, innerLatch);
                         executor.submit(lowerLeft);
 
-                        upperLeft.join();
-                        lowerLeft.join();
-
                     } else { //(!upperLowerSplit && leftRightSplit) {
+                        innerLatch = new CountDownLatch(1);
+                        MatrixAdd upperLeft = new MatrixAdd(iLow, iMid, jLow, jMid, A, B, result, innerLatch);
                         executor.submit(upperLeft);
-                        executor.submit(upperRight);
 
-                        upperLeft.join();
-                        upperRight.join();
+                        innerLatch.await();
+                        innerLatch = new CountDownLatch(1);
+
+                        MatrixAdd upperRight = new MatrixAdd(iLow, iMid, jMid + 1, jHigh, A, B, result, innerLatch);
+                        executor.submit(upperRight);
                     }
+                    innerLatch.await();
 
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
 
-
             }
+            parentLatch.countDown();
+            return null;
 
-            return;
         }
     }
 
