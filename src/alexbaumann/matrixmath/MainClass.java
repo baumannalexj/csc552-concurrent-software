@@ -5,7 +5,7 @@ import java.util.Random;
 
 /**
  * alexander baumann
- * assignment 6 - matrix addition and multiplication using explicit threads
+ * assignment 7 - matrix addition and multiplication using task executor
  */
 public class MainClass {
 
@@ -24,7 +24,9 @@ public class MainClass {
 //        matMathImpl = new MatMathImpl();
 //        matMathImpl = new MatMathStreamImpl();
 //        matMathImpl = new MatMathForkJoinImpl();
-        matMathImpl = new MatMathThreadImpl();
+//        matMathImpl = new MatMathThreadImpl();
+//        matMathImpl = new MatMathLatchImpl();
+        matMathImpl = new MatMathExecutorImpl();
 
 
         A = new int[numRows][numCols];
@@ -40,15 +42,16 @@ public class MainClass {
         int max = 10;
 
         Random rand = new Random();
-        for (int i = 0; i < numRows; i++) {
-            for (int j = 0; j < numCols; j++) {
-                A[i][j] = rand.nextInt((max - min) + 1) + min;
-                B[i][j] = rand.nextInt((max - min) + 1) + min;
-                C[i][j] = rand.nextInt((max - min) + 1) + min;
-                D[i][j] = rand.nextInt((max - min) + 1) + min;
-            }
-        }
         for (int loop = 0; loop < 5; loop++) {
+
+            for (int i = 0; i < numRows; i++) {
+                for (int j = 0; j < numCols; j++) {
+                    A[i][j] = rand.nextInt((max - min) + 1) + min;
+                    B[i][j] = rand.nextInt((max - min) + 1) + min;
+                    C[i][j] = rand.nextInt((max - min) + 1) + min;
+                    D[i][j] = rand.nextInt((max - min) + 1) + min;
+                }
+            }
 
 
             System.out.println("Starting now...");
