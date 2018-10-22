@@ -1,8 +1,0 @@
-In src/alexbaumann/matrixmath/MainClass.java, comment/uncomment the Matrix Math Implementation you want to run
-
-My explicit thread implementation class is called MatMathThreadImpl.java
-
-Then run (using java 8):
-
-    ant compile
-    java -classpath ./build/classes/ alexbaumann.matrixmath.MainClass
