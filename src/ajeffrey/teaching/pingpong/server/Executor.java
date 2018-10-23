@@ -16,35 +16,25 @@ import java.util.concurrent.TimeUnit;
  *
  *
  * You should open the file ajeffrey/teaching/pingpong/server/Executor.java, which executes tasks provided by the server. Currently it uses a simplistic one-thread-per-task model. You should change this, using the inbuilt (Thread?)executor classes from java.util.concurrent to achieve as many as possible of the following:
- *
- *
- *
  * Your answer should be put into a zip archive file, and submitted using the Course OnLine system.
  */
 
 public interface Executor {
-
-
-//TODO one need to change this file for assignment
-
-
     /// never more than 10 idle workers ==> carpool size
 
+    public static final int MAX_POOL_SIZE = 50;     /** There are never more than 50 worker threads in use at one time.*/
 
-    //TODO read API for ExecutorService
-    // * There are never more than 50 worker threads in use at one time.
-    public static final int MAX_POOL_SIZE = 50;
-    // * There are never more than 10 idle worker threads (i.e. threads which have been built, but are not currently performing a task) at one time.
-     static final int MIN_POOL_SIZE = 10;
+     static final int MIN_POOL_SIZE = 10;     /** There are never more than 10 idle worker threads (i.e. threads which have been built, but are not currently performing a task) at one time.*/
 
-     static final long KEEP_ALIVE_TIME = 60; //TODO look this up, NULL?
 
-    // * There are never be more than 100 client connections waiting to be serviced at one time.
-    public static final int MAX_NUM_CLIENT_CONNECTIONS = 100;
-    //     * New client connections are cancelled in preference to old client connections.
-     static final boolean IS_FAIR_FIFO_ORDER = true;
+    static final long KEEP_ALIVE_TIME = 60; //TODO look this up, NULL?
 
-     BlockingQueue<Runnable> blockingWorkQueue= new ArrayBlockingQueue<>(
+    public static final int MAX_NUM_CLIENT_CONNECTIONS = 100;     /** * There are never be more than 100 client connections waiting to be serviced at one time.*/
+
+     static final boolean IS_FAIR_FIFO_ORDER = true;     /** New client connections are cancelled in preference to old client connections.*/
+
+
+    BlockingQueue<Runnable> blockingWorkQueue= new ArrayBlockingQueue<>(
             MAX_NUM_CLIENT_CONNECTIONS,
             IS_FAIR_FIFO_ORDER);
 
