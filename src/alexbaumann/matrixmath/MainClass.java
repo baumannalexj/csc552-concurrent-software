@@ -29,8 +29,6 @@ public class MainClass {
         matMathImpl = new MatMathExecutorImpl();
 
 
-        //TODO check validity of matrix math?
-
         A = new int[numRows][numCols];
         B = new int[numRows][numCols];
         C = new int[numRows][numCols];
@@ -66,8 +64,8 @@ public class MainClass {
 //            r = new int[numRows][numCols];
 
             matMathImpl.add(A, B, r);
-            matMathImpl.print(r);
-            System.out.println("------------");
+//            matMathImpl.print(r);
+//            System.out.println("------------");
 
 
 
@@ -77,8 +75,8 @@ public class MainClass {
 //            s = new int[numRows][numCols];
 
             matMathImpl.multiply(r, C, s);
-            matMathImpl.print(s);
-            System.out.println("------------");
+//            matMathImpl.print(s);
+//            System.out.println("------------");
 
 
             matMathImpl.multiply(s, D, t);

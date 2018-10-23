@@ -7,7 +7,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class MatMathExecutorImpl implements MatMath {
-    private static final int CUTOFF = 2;
+    private static final int CUTOFF = 10;
     ExecutorService executor = Executors.newWorkStealingPool(100);
 
     @Override
@@ -21,7 +21,7 @@ public class MatMathExecutorImpl implements MatMath {
     public void multiply(int[][] A, int[][] B, int[][] result) {
 
         CountDownLatch startLatch = new CountDownLatch(1);
-        MatrixMultiply multiply = new MatrixMultiply(0, A.length-1, 0, B[0].length-1, A, B, result, startLatch);
+        MatrixMultiply multiply = new MatrixMultiply(0, A.length - 1, 0, B[0].length - 1, A, B, result, startLatch);
 
         executor.submit(multiply);
 
@@ -38,7 +38,7 @@ public class MatMathExecutorImpl implements MatMath {
     public void add(int[][] A, int[][] B, int[][] result) {
 
         CountDownLatch startLatch = new CountDownLatch(1);
-        MatrixAdd add = new MatrixAdd(0, A.length-1, 0, B[0].length-1, A, B, result, startLatch);
+        MatrixAdd add = new MatrixAdd(0, A.length - 1, 0, B[0].length - 1, A, B, result, startLatch);
 
         executor.submit(add);
 
