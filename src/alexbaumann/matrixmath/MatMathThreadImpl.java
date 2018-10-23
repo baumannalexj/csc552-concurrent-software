@@ -70,8 +70,8 @@ public class MatMathThreadImpl implements MatMath {
             if (iHigh - iLow <= CUTOFF
                     && jHigh - jLow <= CUTOFF) {
 
-                for (int i = iLow; i < iHigh; i++) {
-                    for (int j = jLow; j < jHigh; j++) {
+                for (int i = iLow; i <= iHigh; i++) {
+                    for (int j = jLow; j <= jHigh; j++) {
                         for (int k = 0; k < A[0].length; k++) {
                             result[i][j] += A[i][k] * B[k][j];
                         }
