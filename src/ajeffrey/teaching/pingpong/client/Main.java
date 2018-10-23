@@ -38,7 +38,8 @@ public class Main {
 
 class Client implements Runnable {
 
-    final Thread thread = new Thread (this);
+	public static final int SLEEP_MODIFER = 0;
+	final Thread thread = new Thread (this);
 
     public void start () { thread.start (); }
 
@@ -47,28 +48,28 @@ class Client implements Runnable {
 	    while (true) {
 		Debug.out.println ("Making connection");
 		final Socket socket = new Socket ("127.0.0.1", 2000);
-		final SafePrintWriter out = 
+		final SafePrintWriter writeOut =
 		    SocketIO.singleton.buildSafePrintWriter (socket, "\n");
-		final SafeBufferedReader in = 
+		final SafeBufferedReader readIn =
 		    SocketIO.singleton.buildSafeBufferedReader (socket);
-		final String welcome = in.readLine ();
+		final String welcome = readIn.readLine ();
 		Debug.out.println ("Got " + welcome);
 		while (Math.random () > .1) {
 		    if (Math.random () > .5) {
 			Debug.out.println ("Sending PING");
-			out.println ("PING");
+			writeOut.println ("PING");
 		    } else {	
 			Debug.out.println ("Sending PONG");
-			out.println ("PONG");
+			writeOut.println ("PONG");
 		    }
-		    final String line = in.readLine ();
+		    final String line = readIn.readLine ();
 		    Debug.out.println ("Got " + line);
-		    thread.sleep ((long)(Math.random () * 1000));
+		    thread.sleep ((long)(Math.random () * SLEEP_MODIFER));
 		}
 		Debug.out.println ("Quitting");
-		out.println ("QUIT");
+		writeOut.println ("QUIT");
 		socket.close ();
-		thread.sleep ((long)(Math.random () * 2000));
+		thread.sleep ((long)(Math.random () * 2* SLEEP_MODIFER));
 	    }
 	} catch (final IOException ex) {
 	    Debug.out.println ("Caught " + ex);
