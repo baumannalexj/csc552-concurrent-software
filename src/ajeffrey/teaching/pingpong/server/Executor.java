@@ -33,9 +33,9 @@ public interface Executor {
 
     //TODO read API for ExecutorService
     // * There are never more than 50 worker threads in use at one time.
-    public static final int MAX_POOL_SIZE = 5;
+    public static final int MAX_POOL_SIZE = 50;
     // * There are never more than 10 idle worker threads (i.e. threads which have been built, but are not currently performing a task) at one time.
-     static final int MIN_POOL_SIZE = 1;
+     static final int MIN_POOL_SIZE = 10;
 
      static final long KEEP_ALIVE_TIME = 60; //TODO look this up, NULL?
 
