@@ -20,7 +20,7 @@ public class MainClass {
 
 
         //TODO uncomment the implementations you wish to use
-//        MatMath matMathSimpleImpl = new MatMathImpl();
+        MatMath matMathSimpleImpl = new MatMathImpl();
 //        matMathImpl = new MatMathImpl();
 //        matMathImpl = new MatMathStreamImpl();
 //        matMathImpl = new MatMathForkJoinImpl();
@@ -28,6 +28,8 @@ public class MainClass {
 //        matMathImpl = new MatMathLatchImpl();
         matMathImpl = new MatMathExecutorImpl();
 
+
+        //TODO check validity of matrix math?
 
         A = new int[numRows][numCols];
         B = new int[numRows][numCols];
@@ -61,27 +63,24 @@ public class MainClass {
 //            matMathSimpleImpl.add(A, B, r);
 //            matMathSimpleImpl.print(r);
 //            System.out.println("------------");
-
 //            r = new int[numRows][numCols];
 
             matMathImpl.add(A, B, r);
-//            matMathImpl.print(r);
-//            System.out.println("------------");
-//
-////
+            matMathImpl.print(r);
+            System.out.println("------------");
+
+
+
 //            matMathSimpleImpl.multiply(r, C, s);
 //            matMathSimpleImpl.print(s);
-
-
 //            System.out.println("------------");
 //            s = new int[numRows][numCols];
 
             matMathImpl.multiply(r, C, s);
-//            matMathImpl.print(s);
-//            System.out.println("------------");
+            matMathImpl.print(s);
+            System.out.println("------------");
 
 
-//
             matMathImpl.multiply(s, D, t);
 //            matMathImpl.print(t);
 

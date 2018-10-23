@@ -68,12 +68,12 @@ public class MatMathThreadImpl implements MatMath {
         @Override
         public void run() {
             if (iHigh - iLow <= CUTOFF
-                    || jHigh - jLow <= CUTOFF) {
+                    && jHigh - jLow <= CUTOFF) {
 
-                for (int i = 0; i < A.length; i++) {
-                    for (int j = 0; j < B[0].length; j++) {
+                for (int i = iLow; i < iHigh; i++) {
+                    for (int j = jLow; j < jHigh; j++) {
                         for (int k = 0; k < A[0].length; k++) {
-                            result[iLow][jLow] += A[iLow][k] * B[k][jLow];
+                            result[i][j] += A[i][k] * B[k][j];
                         }
                     }
                 }

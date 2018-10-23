@@ -7,7 +7,7 @@ import java.util.concurrent.Executors;
 
 public class MatMathLatchImpl implements MatMath {
     private static final int CUTOFF = 2;
-    ExecutorService executor = Executors.newWorkStealingPool(100);
+    ExecutorService executor = Executors.newWorkStealingPool(1000);
 
     @Override
     public void print(int[][] A) {
@@ -20,7 +20,7 @@ public class MatMathLatchImpl implements MatMath {
 
     public void multiply(int[][] A, int[][] B, int[][] result) {
         CountDownLatch latch = new CountDownLatch(1);
-        MatrixMultiply multiply = new MatrixMultiply(0, A.length - 1, 0, B[0].length - 1, A, B, result, latch);
+        MatrixMultiply multiply = new MatrixMultiply(0, A.length, 0, B[0].length, A, B, result, latch);
 
         executor.submit(multiply);
         try {
@@ -34,13 +34,16 @@ public class MatMathLatchImpl implements MatMath {
 
     @Override
     public void add(int[][] A, int[][] B, int[][] result) {
-        MatrixAdd matrixAdd = new MatrixAdd(0, A.length - 1, 0, A[0].length - 1, A, B, result);
+        MatrixAdd matrixAdd = new MatrixAdd(0, A.length, 0, A[0].length, A, B, result);
         matrixAdd.start();
         try {
             matrixAdd.join();
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        System.out.println("finished addition");
+
     }
 
     class MatrixMultiply extends Thread {
@@ -70,12 +73,12 @@ public class MatMathLatchImpl implements MatMath {
         @Override
         public void run() {
             if (iHigh - iLow <= CUTOFF
-                    || jHigh - jLow <= CUTOFF) {
+                    && jHigh - jLow <= CUTOFF) {
 
-                for (int i = iLow; i <= iHigh; i++) {
-                    for (int j = jLow; j <= jHigh; j++) {
+                for (int i = iLow; i < iHigh; i++) {
+                    for (int j = jLow; j < jHigh; j++) {
                         for (int k = 0; k < A[0].length; k++) {
-                            result[iLow][jLow] += A[iLow][k] * B[k][jLow];
+                            result[i][j] += A[i][k] * B[k][j];
                         }
                     }
                 }
