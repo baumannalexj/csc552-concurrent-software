@@ -7,21 +7,55 @@ import java.util.concurrent.Executors;
 
 public class MainPrint {
 
-    static ConcurrentLinkedQueue<Integer> divisorIsMultiple2 = new ConcurrentLinkedQueue<>();
-    static ConcurrentLinkedQueue<Integer> divisorIsMultiple3 = new ConcurrentLinkedQueue<>();
-    static ConcurrentLinkedQueue<Integer> divisorIsMultiple5 = new ConcurrentLinkedQueue<>();
-
     //TODO could make more concurrent with hashmap
     // numberTo2Exponent {  (1,0), (2,1), (3,0) ... (40, 3) }
     // numberTo3Exponent {  (1,0), (2,0), (3,1) ... (40, 0) }
     // numberTo5Exponent {  (1,0), (2,0), (3,0) ... (40, 1) }
 
+    private static ConcurrentLinkedQueue<String> resultQueue = new ConcurrentLinkedQueue<>();
 
     static ExecutorService executor = Executors.newFixedThreadPool(100);
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
 
         int targetHammingNumber = 40;
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        OutCopy outCopy = new OutCopy(targetHammingNumber, latch, resultQueue);
+
+        executor.submit(outCopy);
+
+        int startNumber = 1;
+        while (latch.getCount() != 0) {
+            if (resultQueue.peek() != null) {
+                System.out.println(resultQueue.poll());
+            }
+        }
+
+        executor.shutdown();
+    }
+}
+
+class OutCopy implements Runnable {
+
+    private ConcurrentLinkedQueue<Integer> divisorIsMultiple2 = new ConcurrentLinkedQueue<>();
+    private ConcurrentLinkedQueue<Integer> divisorIsMultiple3 = new ConcurrentLinkedQueue<>();
+    private ConcurrentLinkedQueue<Integer> divisorIsMultiple5 = new ConcurrentLinkedQueue<>();
+
+    private int targetHammingNumber;
+    private CountDownLatch parentLatch;
+    private ConcurrentLinkedQueue<String> resultQueue;
+
+    OutCopy(int targetHammingNumber, CountDownLatch parentLatch, ConcurrentLinkedQueue<String> resultQueue) {
+        this.targetHammingNumber = targetHammingNumber;
+        this.parentLatch = parentLatch;
+        this.resultQueue = resultQueue;
+    }
+
+
+    @Override
+    public void run() {
         int currentNumber = 1;
 
         while (currentNumber <= targetHammingNumber) {
@@ -31,48 +65,30 @@ public class MainPrint {
             MultipleOfChecker multipleOf3 = new MultipleOfChecker(3, currentNumber, divisorIsMultiple3, latch);
             MultipleOfChecker multipleOf5 = new MultipleOfChecker(5, currentNumber, divisorIsMultiple5, latch);
 
-            executor.submit(multipleOf2);
-            executor.submit(multipleOf3);
-            executor.submit(multipleOf5);
+            MainPrint.executor.submit(multipleOf2);
+            MainPrint.executor.submit(multipleOf3);
+            MainPrint.executor.submit(multipleOf5);
 
             try {
                 latch.await();
             } catch (InterruptedException e) {
                 e.printStackTrace();
-                throw new Exception(e.getMessage(), e.getCause());
             }
 
             Integer exponent2 = divisorIsMultiple2.poll();
             Integer exponent3 = divisorIsMultiple3.poll();
             Integer exponent5 = divisorIsMultiple5.poll();
 
-            if (currentNumber != Math.pow(2, exponent2) * Math.pow(3, exponent3) * Math.pow(5, exponent5)) {
-                //not a hamming
-//                System.out.printf("Number: %d is NOT a Hamming Number", currentNumber);
-//                System.out.println();
-
-            } else {
-
-                System.out.printf("%d \t: 2^%d 3^%d 5^%d",
-                        currentNumber, exponent2, exponent3, exponent5);
-                System.out.println();
+            if (currentNumber == Math.pow(2, exponent2) * Math.pow(3, exponent3) * Math.pow(5, exponent5)) {
+                resultQueue.add(String.format("%d \t: 2^%d 3^%d 5^%d", currentNumber, exponent2, exponent3, exponent5));
             }
-
 
             currentNumber++;
         }
 
-        executor.shutdown();
-
+        parentLatch.countDown();
     }
-}
 
-class OutCopy implements Runnable {
-
-    @Override
-    public void run() {
-
-    }
 }
 
 
