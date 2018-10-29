@@ -5,11 +5,17 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class Main {
+public class MainPrint {
 
     static ConcurrentLinkedQueue<Integer> divisorIsMultiple2 = new ConcurrentLinkedQueue<>();
     static ConcurrentLinkedQueue<Integer> divisorIsMultiple3 = new ConcurrentLinkedQueue<>();
     static ConcurrentLinkedQueue<Integer> divisorIsMultiple5 = new ConcurrentLinkedQueue<>();
+
+    //TODO could make more concurrent with hashmap
+    // numberTo2Exponent {  (1,0), (2,1), (3,0) ... (40, 3) }
+    // numberTo3Exponent {  (1,0), (2,0), (3,1) ... (40, 0) }
+    // numberTo5Exponent {  (1,0), (2,0), (3,0) ... (40, 1) }
+
 
     static ExecutorService executor = Executors.newFixedThreadPool(100);
 
@@ -42,12 +48,12 @@ public class Main {
 
             if (currentNumber != Math.pow(2, exponent2) * Math.pow(3, exponent3) * Math.pow(5, exponent5)) {
                 //not a hamming
-                System.out.printf("Number: %d is NOT a Hamming Number", currentNumber);
-                System.out.println();
+//                System.out.printf("Number: %d is NOT a Hamming Number", currentNumber);
+//                System.out.println();
 
             } else {
 
-                System.out.printf("Number: %d is a hamming number: 2^%d 3^%d 5^%d",
+                System.out.printf("%d \t: 2^%d 3^%d 5^%d",
                         currentNumber, exponent2, exponent3, exponent5);
                 System.out.println();
             }
@@ -57,6 +63,14 @@ public class Main {
         }
 
         executor.shutdown();
+
+    }
+}
+
+class OutCopy implements Runnable {
+
+    @Override
+    public void run() {
 
     }
 }
