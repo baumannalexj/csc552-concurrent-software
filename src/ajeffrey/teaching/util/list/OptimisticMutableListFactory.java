@@ -6,7 +6,7 @@ package ajeffrey.teaching.util.list;
  * @author Alan Jeffrey
  * @version 1.0.3
  */
-public interface MutableListFactory {
+public interface OptimisticMutableListFactory {
 
     /**
      * Build a new empty list object.

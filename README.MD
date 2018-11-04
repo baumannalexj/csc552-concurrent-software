@@ -1,9 +1,11 @@
-In src/alexbaumann/hammingnumbers/HammingGeneratorMain.java,
+In src/ajeffrey/teaching/util/list/OptimisticMutableList.java,
 
-set your targetNumber == the number you'd like to generate Hamming numbers up to
-(or run the program with argument of the targetnumber you'd like)
+OptimisticMutableList implementation of mutable list which is threadsafe,  
+and doesn't use locks (except implicitly through Atomic library
 
-Then run (using java 8):
+
+1. go to TestMutableList.main() and uncomment your desired implementation
+2. Then run (using java 8), with input params as objects in the list
 
     ant compile
-    java -classpath ./build/classes/ alexbaumann.hammingnumbers.HammingGeneratorMain <optional argument for targetNumber>
+    java -classpath ./build/classes/ ajeffrey.teaching.util.list.OptimisticMutableList a b c d e f g 
