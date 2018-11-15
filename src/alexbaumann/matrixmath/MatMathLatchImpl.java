@@ -1,13 +1,13 @@
 package alexbaumann.matrixmath;
 
 import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.RecursiveTask;
 
-public class MatMathThreadImpl implements MatMath {
+public class MatMathLatchImpl implements MatMath {
     private static final int CUTOFF = 2;
-    ExecutorService executor = Executors.newWorkStealingPool(100);
+    ExecutorService executor = Executors.newWorkStealingPool(1000);
 
     @Override
     public void print(int[][] A) {
@@ -19,12 +19,12 @@ public class MatMathThreadImpl implements MatMath {
     @Override
 
     public void multiply(int[][] A, int[][] B, int[][] result) {
+        CountDownLatch latch = new CountDownLatch(1);
+        MatrixMultiply multiply = new MatrixMultiply(0, A.length, 0, B[0].length, A, B, result, latch);
 
-        MatrixMultiply multiply = new MatrixMultiply(0, A.length - 1, 0, B[0].length - 1, A, B, result);
-        multiply.start();
-
+        executor.submit(multiply);
         try {
-            multiply.join();
+            latch.await();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -34,13 +34,16 @@ public class MatMathThreadImpl implements MatMath {
 
     @Override
     public void add(int[][] A, int[][] B, int[][] result) {
-        MatrixAdd matrixAdd = new MatrixAdd(0, A.length - 1, 0, A[0].length - 1, A, B, result);
+        MatrixAdd matrixAdd = new MatrixAdd(0, A.length, 0, A[0].length, A, B, result);
         matrixAdd.start();
         try {
             matrixAdd.join();
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        System.out.println("finished addition");
+
     }
 
     class MatrixMultiply extends Thread {
@@ -53,8 +56,9 @@ public class MatMathThreadImpl implements MatMath {
         int[][] B;
 
         int[][] result;
+        private CountDownLatch parentLatch;
 
-        public MatrixMultiply(int iLow, int iHigh, int jLow, int jHigh, int[][] a, int[][] b, int[][] result) {
+        public MatrixMultiply(int iLow, int iHigh, int jLow, int jHigh, int[][] a, int[][] b, int[][] result, CountDownLatch parentLatch) {
             this.iLow = iLow;
             this.iHigh = iHigh;
             this.jLow = jLow;
@@ -62,6 +66,7 @@ public class MatMathThreadImpl implements MatMath {
             A = a;
             B = b;
             this.result = result;
+            this.parentLatch = parentLatch;
         }
 
 
@@ -70,8 +75,8 @@ public class MatMathThreadImpl implements MatMath {
             if (iHigh - iLow <= CUTOFF
                     && jHigh - jLow <= CUTOFF) {
 
-                for (int i = iLow; i <= iHigh; i++) {
-                    for (int j = jLow; j <= jHigh; j++) {
+                for (int i = iLow; i < iHigh; i++) {
+                    for (int j = jLow; j < jHigh; j++) {
                         for (int k = 0; k < A[0].length; k++) {
                             result[i][j] += A[i][k] * B[k][j];
                         }
@@ -85,6 +90,7 @@ public class MatMathThreadImpl implements MatMath {
                     int jMid = jLow;
                     boolean upperLowerSplit = false;
                     boolean leftRightSplit = false;
+                    CountDownLatch innerLatch;
 
                     if (iLow < iHigh) {
                         iMid = iLow + (iHigh - iLow) / 2; // integer overflow protection
@@ -97,38 +103,38 @@ public class MatMathThreadImpl implements MatMath {
                     }
 
 
-                    MatrixMultiply upperLeft = new MatrixMultiply(iLow, iMid, jLow, jMid, A, B, result);
-                    MatrixMultiply lowerLeft = new MatrixMultiply(iMid + 1, iHigh, jLow, jMid, A, B, result);
-                    MatrixMultiply upperRight = new MatrixMultiply(iLow, iMid, jMid + 1, jHigh, A, B, result);
-                    MatrixMultiply lowerRight = new MatrixMultiply(iMid + 1, iHigh, jMid + 1, jHigh, A, B, result);
-
 
                     if (upperLowerSplit && leftRightSplit) {
+                        innerLatch = new CountDownLatch(4);
+                        MatrixMultiply upperLeft = new MatrixMultiply(iLow, iMid, jLow, jMid, A, B, result, innerLatch);
+                        MatrixMultiply lowerLeft = new MatrixMultiply(iMid + 1, iHigh, jLow, jMid, A, B, result, innerLatch);
+                        MatrixMultiply upperRight = new MatrixMultiply(iLow, iMid, jMid + 1, jHigh, A, B, result, innerLatch);
+                        MatrixMultiply lowerRight = new MatrixMultiply(iMid + 1, iHigh, jMid + 1, jHigh, A, B, result, innerLatch);
 
                         executor.submit(upperLeft);
                         executor.submit(lowerLeft);
                         executor.submit(upperRight);
                         executor.submit(lowerRight);
 
-                        upperLeft.join();
-                        lowerLeft.join();
-                        upperRight.join();
-                        lowerRight.join();
-
                     } else if (upperLowerSplit && !leftRightSplit) {
+                        innerLatch = new CountDownLatch(2);
+                        MatrixMultiply upperLeft = new MatrixMultiply(iLow, iMid, jLow, jMid, A, B, result, innerLatch);
+                        MatrixMultiply lowerLeft = new MatrixMultiply(iMid + 1, iHigh, jLow, jMid, A, B, result, innerLatch);
+
+
                         executor.submit(upperLeft);
                         executor.submit(lowerLeft);
 
-                        upperLeft.join();
-                        lowerLeft.join();
-
                     } else { //(!upperLowerSplit && leftRightSplit) {
+                        innerLatch = new CountDownLatch(2);
+                        MatrixMultiply upperLeft = new MatrixMultiply(iLow, iMid, jLow, jMid, A, B, result, innerLatch);
+                        MatrixMultiply upperRight= new MatrixMultiply(iLow, iMid, jLow, jMid, A, B, result, innerLatch);
+
                         executor.submit(upperLeft);
                         executor.submit(upperRight);
-
-                        upperLeft.join();
-                        upperRight.join();
                     }
+
+                    innerLatch.await();
 
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -137,6 +143,7 @@ public class MatMathThreadImpl implements MatMath {
 
             }
 
+            parentLatch.countDown();
             return;
         }
     }
