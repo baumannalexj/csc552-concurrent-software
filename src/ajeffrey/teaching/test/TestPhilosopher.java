@@ -3,10 +3,10 @@ package ajeffrey.teaching.test;
 import ajeffrey.teaching.debug.Debug;
 import ajeffrey.teaching.debug.StepDebugStream;
 
-import ajeffrey.teaching.dining.OrderedPhilosopher;
 import ajeffrey.teaching.dining.Philosopher;
-import ajeffrey.teaching.dining.PhilosopherFactory;
-import ajeffrey.teaching.dining.DeadlockingPhilosopher;
+import ajeffrey.teaching.dining.TokenPhilosopher;
+
+import java.util.concurrent.Semaphore;
 
 /**
  * A test of the dining philosophers, with four philosophers.
@@ -41,12 +41,20 @@ public class TestPhilosopher {
 		final Comparable fork4 = "Fork 4";
 		// Which philosopher factory to use: you may want to edit this!
 //		final PhilosopherFactory factory = DeadlockingPhilosopher.factory;
-		final PhilosopherFactory factory = OrderedPhilosopher.factory;
+//		final PhilosopherFactory factory = OrderedPhilosopher.factory;
+		final TokenPhilosopher.TokenPhilosopherFactoryImpl factory = (TokenPhilosopher.TokenPhilosopherFactoryImpl) TokenPhilosopher.factory;
+
+		int numberOfForks = 4;
+		Semaphore semaphore = new Semaphore(numberOfForks - 1);
+
+		factory.setDinerTokenSemaphore(semaphore);
+
 		// Create the philosophers
-		final Philosopher fred = factory.build(fork1, fork2, "Fred");
-		final Philosopher wilma = factory.build(fork2, fork3, "Wilma");
-		final Philosopher barney = factory.build(fork3, fork4, "Barney");
-		final Philosopher betty = factory.build(fork4, fork1, "Betty");
+		final Philosopher fred = factory.build(fork1, fork2, "Fred", semaphore);
+		final Philosopher wilma = factory.build(fork2, fork3, "Wilma", semaphore);
+		final Philosopher barney = factory.build(fork3, fork4, "Barney", semaphore);
+		final Philosopher betty = factory.build(fork4, fork1, "Betty", semaphore);
+
 		// Start the philosophers
 		fred.start();
 		wilma.start();

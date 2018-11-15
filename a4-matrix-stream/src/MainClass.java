@@ -4,8 +4,10 @@ public class MainClass {
 
     public static void main(String[] args) {
         int[][] A, B, C, D, r, s, t;
-        int numRows = 1000;
-        int numCols = 1000;
+//        int numRows = 1000;
+//        int numCols = 1000;
+        int numRows = 10;
+        int numCols = 10;
 
         A = new int[numRows][numCols];
         B = new int[numRows][numCols];
@@ -29,49 +31,33 @@ public class MainClass {
         }
 
 
-        //TODO change impl from nested for loops to streams
-//        MatMath matMathImpl = new MatMathImpl();
-        MatMath matMathImpl = new MatMathStreamImpl();
+        MatMath matMathImpl;
+//        matMathImpl = new MatMathImpl();
+//        matMathImpl = new MatMathStreamImpl();
+        matMathImpl = new MatMathForkJoinImpl();
 
         System.out.println("Starting now.");
         long start = System.currentTimeMillis();
 
 
         matMathImpl.add(A, B, r);
-
-//            System.out.println("\t A");
-//        matMathImpl.print(A);
-//            System.out.println("\t+B");
-//        matMathImpl.print(B);
-//            System.out.println("= r:");
-
-//        matMathImpl.print(r);
-
-//        System.out.println("------------");
-
-
-//            System.out.println("\t r:");
-//        matMathImpl.print(r);
-//            System.out.println("\txC:");
-//        matMathImpl.print(C);
+        matMathImpl.print(r);
+        System.out.println("------------");
+        System.out.println("------------");
+//
+////
         matMathImpl.multiply(r, C, s); //2x3
-
-//            System.out.println("\ts:");
-//        matMathImpl.print(s);
-
-
+        matMathImpl.print(s);
         System.out.println("------------");
 
-//            System.out.println("\t s:");
-//        matMathImpl.print(s);
-//            System.out.println("\txD:");
-//        matMathImpl.print(D);
-        matMathImpl.multiply(s, D, t);
 
-//            System.out.println("\tt:");
+//
+//
+        matMathImpl.multiply(s, D, t);
         matMathImpl.print(t);
 
-
+        System.out.println("------------");
+        
         System.out.println("Time: " +
                 (System.currentTimeMillis() - start) + " ms");
 
